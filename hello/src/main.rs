@@ -3,6 +3,35 @@ use std::mem;
 fn main() {
     println!("Hello, world!");
     println!("gcd = {}", gcd(12, 14));
+
+    let mut a: u8 = 10;
+    let b: u8 = 10;
+    let mut the_ref = &a;
+
+    println!(
+        "a: {}, b: {}, *the_ref: {} at {:p}",
+        a, b, *the_ref, the_ref
+    );
+
+    // a = 12; // cannot assign to `a` because it is borrowed
+    println!(
+        "a: {}, b: {}, *the_ref: {} at {:p}",
+        a, b, *the_ref, the_ref
+    );
+
+    // so we return the borrowed reference
+    the_ref = &b;
+    a = 12;
+    println!(
+        "a: {}, b: {}, *the_ref: {} at {:p}",
+        a, b, *the_ref, the_ref
+    );
+
+    the_ref = &a;
+    println!(
+        "a: {}, b: {}, *the_ref: {} at {:p}",
+        a, b, *the_ref, the_ref
+    );
 }
 
 fn gcd(mut n: u64, mut m: u64) -> u64 {
@@ -42,4 +71,22 @@ fn test_destructuring() {
 fn test_tuples() {
     let numbers = (1, 2, 3);
     assert_eq!(2, numbers.1);
+
+    let silly_tuple = (1,);
+    assert_eq!(silly_tuple.0, 1);
+
+    let silly_int = (1);
+    assert_eq!(silly_int, 1);
+
+    let mut a_tuple = (1, 1.4, false);
+    assert_eq!(format!("{:?}", a_tuple), "(1, 1.4, false)");
+    // a_tuple = (2, 3, true); // compile time check for a f64. but only if running the tests
+    a_tuple = (2, 3f64, true);
+    assert_eq!(format!("{:?}", a_tuple), "(2, 3.0, true)");
+}
+
+#[test]
+fn test_formats() {
+    let small = 10.1234f32;
+    assert_eq!(format!("small is {:.2}", small), "small is 10.12");
 }

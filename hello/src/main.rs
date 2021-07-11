@@ -53,6 +53,18 @@ fn test_person() {
 
     assert_eq!("Joe", joe.name);
     assert_eq!(55, joe.age);
+
+    // typed destructuring ftw
+    let Person {
+        name: mut fname,
+        age: _,
+    } = joe;
+
+    // assert_eq!("Joe", joe.name); // can not access joe anymore since it moved
+
+    assert_eq!("Joe", fname);
+    fname = fname.to_uppercase();
+    assert_eq!("JOE", fname);
 }
 
 #[test]

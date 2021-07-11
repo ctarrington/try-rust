@@ -1,37 +1,21 @@
 use std::mem;
 
+#[derive(Debug)]
+struct Person {
+    name: String,
+    age: u8,
+}
+
 fn main() {
     println!("Hello, world!");
     println!("gcd = {}", gcd(12, 14));
 
-    let mut a: u8 = 10;
-    let b: u8 = 10;
-    let mut the_ref = &a;
+    let fred = Person {
+        name: String::from("Fred"),
+        age: 15,
+    };
 
-    println!(
-        "a: {}, b: {}, *the_ref: {} at {:p}",
-        a, b, *the_ref, the_ref
-    );
-
-    // a = 12; // cannot assign to `a` because it is borrowed
-    println!(
-        "a: {}, b: {}, *the_ref: {} at {:p}",
-        a, b, *the_ref, the_ref
-    );
-
-    // so we return the borrowed reference
-    the_ref = &b;
-    a = 12;
-    println!(
-        "a: {}, b: {}, *the_ref: {} at {:p}",
-        a, b, *the_ref, the_ref
-    );
-
-    the_ref = &a;
-    println!(
-        "a: {}, b: {}, *the_ref: {} at {:p}",
-        a, b, *the_ref, the_ref
-    );
+    println!("fred = {:?}", fred);
 }
 
 fn gcd(mut n: u64, mut m: u64) -> u64 {
@@ -61,6 +45,17 @@ fn test_zeros() {
 }
 
 #[test]
+fn test_person() {
+    let joe = Person {
+        name: String::from("Joe"),
+        age: 55,
+    };
+
+    assert_eq!("Joe", joe.name);
+    assert_eq!(55, joe.age);
+}
+
+#[test]
 fn test_destructuring() {
     let (a, b) = (1, 2);
     assert_eq!(1, a);
@@ -75,8 +70,7 @@ fn test_tuples() {
     let silly_tuple = (1,);
     assert_eq!(silly_tuple.0, 1);
 
-    let silly_int = (1);
-    assert_eq!(silly_int, 1);
+    // let silly_int = (1); // legal but silly and compiler will cry
 
     let mut a_tuple = (1, 1.4, false);
     assert_eq!(format!("{:?}", a_tuple), "(1, 1.4, false)");
@@ -89,4 +83,39 @@ fn test_tuples() {
 fn test_formats() {
     let small = 10.1234f32;
     assert_eq!(format!("small is {:.2}", small), "small is 10.12");
+}
+
+#[test]
+fn test_borrow() {
+    let mut a: u8 = 10;
+    let b: u8 = 10;
+    let mut the_ref = &a;
+
+    println!(
+        "a: {}, b: {}, *the_ref: {} at {:p}",
+        a, b, *the_ref, the_ref
+    );
+    assert_eq!(10, *the_ref);
+
+    // a = 12; // cannot assign to `a` because it is borrowed
+    println!(
+        "a: {}, b: {}, *the_ref: {} at {:p}",
+        a, b, *the_ref, the_ref
+    );
+
+    // so we return the borrowed reference
+    the_ref = &b;
+    a = 12;
+    println!(
+        "a: {}, b: {}, *the_ref: {} at {:p}",
+        a, b, *the_ref, the_ref
+    );
+    assert_eq!(10, *the_ref);
+
+    the_ref = &a;
+    println!(
+        "a: {}, b: {}, *the_ref: {} at {:p}",
+        a, b, *the_ref, the_ref
+    );
+    assert_eq!(12, *the_ref);
 }

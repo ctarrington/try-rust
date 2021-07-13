@@ -7,6 +7,18 @@ struct Person {
     age: u8,
 }
 
+enum Move {
+    Up(u8),
+    Down(u8),
+}
+
+fn extract_motion(the_move: Move) -> i8 {
+    match the_move {
+        Move::Up(value) => value as i8,
+        Move::Down(value) => 0 - value as i8,
+    }
+}
+
 fn main() {
     println!("Hello, world!");
     println!("gcd = {}", gcd(12, 14));
@@ -18,6 +30,8 @@ fn main() {
     };
 
     println!("fred = {:?}", fred);
+    println!("move = {}", extract_motion(Move::Up(2)));
+    println!("move = {}", extract_motion(Move::Down(3)));
 }
 
 fn gcd(mut n: u64, mut m: u64) -> u64 {
@@ -32,6 +46,15 @@ fn gcd(mut n: u64, mut m: u64) -> u64 {
     }
 
     n
+}
+
+#[test]
+fn test_moves() {
+    let up2 = Move::Up(2);
+    let down3 = Move::Down(3);
+
+    assert_eq!(2, extract_motion(up2));
+    assert_eq!(-3, extract_motion(down3));
 }
 
 #[test]

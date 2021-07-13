@@ -7,15 +7,23 @@ struct Person {
     age: u8,
 }
 
-enum Move {
-    Up(u8),
-    Down(u8),
+impl Person {
+    fn increase_age(&mut self) {
+        self.age += 1;
+    }
 }
 
-fn extract_motion(the_move: Move) -> i8 {
-    match the_move {
-        Move::Up(value) => value as i8,
-        Move::Down(value) => 0 - value as i8,
+enum Move {
+    Up(i8),
+    Down(i8),
+}
+
+impl Move {
+    fn extract_motion(&self) -> i8 {
+        match *self {
+            Move::Up(value) => value,
+            Move::Down(value) => -value,
+        }
     }
 }
 
@@ -23,15 +31,20 @@ fn main() {
     println!("Hello, world!");
     println!("gcd = {}", gcd(12, 14));
 
-    let fred = Person {
+    let mut fred = Person {
         name: String::from("Fred"),
         nick_name: String::from("Freddy"),
         age: 15,
     };
 
     println!("fred = {:?}", fred);
-    println!("move = {}", extract_motion(Move::Up(2)));
-    println!("move = {}", extract_motion(Move::Down(3)));
+    fred.increase_age();
+    println!("fred = {:?}", fred);
+    fred.age += 1;
+    println!("fred = {:?}", fred);
+
+    println!("move = {}", Move::Up(2).extract_motion());
+    println!("move = {}", Move::Down(2).extract_motion());
 }
 
 fn gcd(mut n: u64, mut m: u64) -> u64 {
@@ -53,8 +66,8 @@ fn test_moves() {
     let up2 = Move::Up(2);
     let down3 = Move::Down(3);
 
-    assert_eq!(2, extract_motion(up2));
-    assert_eq!(-3, extract_motion(down3));
+    assert_eq!(2, up2.extract_motion());
+    assert_eq!(-3, down3.extract_motion());
 }
 
 #[test]

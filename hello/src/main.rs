@@ -1,15 +1,17 @@
 use std::mem;
 
-#[derive(Debug)]
-struct Person {
-    name: String,
-    nick_name: String,
-    age: u8,
-}
+mod people {
+    #[derive(Debug)]
+    pub struct Person {
+        pub name: String,
+        pub nick_name: String,
+        pub age: u8,
+    }
 
-impl Person {
-    fn increase_age(&mut self) {
-        self.age += 1;
+    impl Person {
+        pub fn increase_age(&mut self) {
+            self.age += 1;
+        }
     }
 }
 
@@ -27,6 +29,8 @@ impl Move {
     }
 }
 
+use crate::people::Person;
+
 fn main() {
     println!("Hello, world!");
     println!("gcd = {}", gcd(12, 14));
@@ -40,8 +44,7 @@ fn main() {
     println!("fred = {:?}", fred);
     fred.increase_age();
     println!("fred = {:?}", fred);
-    fred.age += 1;
-    println!("fred = {:?}", fred);
+    // fred.age += 1; // nope private
 
     println!("move = {}", Move::Up(2).extract_motion());
     println!("move = {}", Move::Down(2).extract_motion());

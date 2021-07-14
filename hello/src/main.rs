@@ -187,3 +187,15 @@ fn test_borrow() {
     );
     assert_eq!(12, *the_ref);
 }
+
+#[test]
+fn test_vectors() {
+    let first_three = vec![1, 2, 3];
+    assert_eq!(6, first_three.iter().sum());
+    // first_three.push(4); // not mutable
+
+    let mut numbers: Vec<i32> = (1..3).collect();
+    assert_eq!(3, numbers.iter().sum()); // the range does not include the endpoint so we add the 3
+    numbers.push(3);
+    assert_eq!(6, numbers.iter().sum());
+}

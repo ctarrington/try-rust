@@ -199,3 +199,11 @@ fn test_vectors() {
     numbers.push(3);
     assert_eq!(6, numbers.iter().sum());
 }
+
+#[test]
+fn test_slices() {
+    let numbers: Vec<i32> = (1..10).collect();
+    let slice_of_numbers = &numbers[5..7]; // index 5 and 6
+    assert_eq!(45, numbers.iter().sum());
+    assert_eq!(6 + 7, slice_of_numbers.iter().sum());
+}

@@ -229,7 +229,8 @@ fn test_mutation() {
 
     let mut temp = "Hi".to_string();
     mutable_ref_to_fname = &mut temp;
-    assert_eq!("Hi", *mutable_ref_to_fname);
+    assert_eq!("Hi", *mutable_ref_to_fname); // rust tolerates old C devs
+    assert_eq!("Hi", mutable_ref_to_fname); // you do not need the dereference
 
     assert_eq!("Fred!!", fname);
 }

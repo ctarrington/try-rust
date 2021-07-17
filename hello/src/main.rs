@@ -207,3 +207,29 @@ fn test_slices() {
     assert_eq!(45, numbers.iter().sum());
     assert_eq!(6 + 7, slice_of_numbers.iter().sum());
 }
+
+#[test]
+fn test_mutation() {
+    let mut fname = "Fred".to_string();
+    fname.push('!');
+    assert_eq!("Fred!", fname);
+
+    let ref_to_fname: &String = &fname;
+    assert_eq!("Fred!", ref_to_fname);
+    assert_eq!("Fred!", fname);
+
+    // mutable reference to a mutable string...
+    let mut mutable_ref_to_fname: &mut String = &mut fname;
+
+    // assert_eq!("Fred!", fname); // creating the mutable reference borrows fname
+
+    assert_eq!("Fred!", mutable_ref_to_fname);
+    mutable_ref_to_fname.push('!');
+    assert_eq!("Fred!!", *mutable_ref_to_fname);
+
+    let mut temp = "Hi".to_string();
+    mutable_ref_to_fname = &mut temp;
+    assert_eq!("Hi", *mutable_ref_to_fname);
+
+    assert_eq!("Fred!!", fname);
+}

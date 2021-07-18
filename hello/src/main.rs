@@ -234,3 +234,30 @@ fn test_mutation() {
 
     assert_eq!("Fred!!", fname);
 }
+
+#[test]
+fn test_if_let() {
+    let odds = (1, 3, 5);
+
+    let result = if let (1, middle, _) = odds {
+        middle
+    } else {
+        -1
+    };
+    assert_eq!(3, result);
+
+    let result = if let (2, _, last) = odds { last } else { -1 };
+    assert_eq!(-1, result);
+}
+
+#[test]
+fn test_match() {
+    let odds = (1, 3, 5);
+
+    let result = match odds {
+        (1, middle, _) => middle,
+        (2, _, last) => last,
+        _ => -1,
+    };
+    assert_eq!(3, result);
+}

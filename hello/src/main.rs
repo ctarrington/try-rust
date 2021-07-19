@@ -261,3 +261,23 @@ fn test_match() {
     };
     assert_eq!(3, result);
 }
+
+#[test]
+fn test_results() {
+    fn process(result: Result<u32, core::num::ParseIntError>) -> u32 {
+        match result {
+            Ok(value) => value,
+            Err(_) => 0,
+        }
+    }
+
+    assert_eq!(23, process("23".parse::<u32>()));
+    assert_eq!(0, process("2q3".parse::<u32>()));
+
+    fn shorter_process(result: Result<u32, core::num::ParseIntError>) -> u32 {
+        result.unwrap_or(0)
+    }
+
+    assert_eq!(23, shorter_process("23".parse::<u32>()));
+    assert_eq!(0, shorter_process("2q3".parse::<u32>()));
+}

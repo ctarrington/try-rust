@@ -281,3 +281,26 @@ fn test_results() {
     assert_eq!(23, shorter_process("23".parse::<u32>()));
     assert_eq!(0, shorter_process("2q3".parse::<u32>()));
 }
+
+#[test]
+fn test_chained_results() {
+    fn process_things(raws: &[&str]) -> Result<u32, core::num::ParseIntError> {
+        let mut sum = 0;
+        for raw in raws {
+            sum += raw.parse::<u32>()?;
+        }
+
+        Ok(sum)
+    }
+
+    fn pointless_indirection(raws: &[&str]) -> Result<u32, core::num::ParseIntError> {
+        let result: u32 = process_things(raws)?;
+        Ok(result)
+    }
+
+    assert_eq!(5, process_things(&["1", "3", "1"]).expect("error"));
+    assert!(process_things(&["1", "2", "3q"]).is_err());
+
+    assert_eq!(5, pointless_indirection(&["1", "3", "1"]).expect("error"));
+    assert!(pointless_indirection(&["1", "2", "3q"]).is_err());
+}

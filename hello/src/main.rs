@@ -304,3 +304,31 @@ fn test_chained_results() {
     assert_eq!(5, pointless_indirection(&["1", "3", "1"]).expect("error"));
     assert!(pointless_indirection(&["1", "2", "3q"]).is_err());
 }
+
+#[test]
+fn test_modularity() {
+    mod things {
+        pub struct Thing {
+            pub weight: u32,
+        }
+    }
+
+    mod stuff {
+        pub struct Stuff {
+            pub width: u32,
+            pub height: u32,
+        }
+    }
+
+    use stuff::Stuff;
+    use things::Thing;
+    let my_thing = Thing { weight: 44 };
+
+    let my_stuff = Stuff {
+        width: 23,
+        height: 11,
+    };
+
+    assert_eq!(23, my_stuff.width);
+    assert_eq!(44, my_thing.weight);
+}

@@ -18,6 +18,15 @@ impl Move {
     }
 }
 
+#[test]
+fn test_moves() {
+    let up2 = Move::Up(2);
+    let down3 = Move::Down(3);
+
+    assert_eq!(2, up2.extract_motion());
+    assert_eq!(-3, down3.extract_motion());
+}
+
 fn main() {
     println!("Hello, world!");
     println!("gcd = {}", gcd(12, 14));
@@ -37,7 +46,11 @@ fn main() {
     println!("move = {}", Move::Down(2).extract_motion());
 }
 
+/// requires two non zero integers
+/// returns the greatest common denominator
 fn gcd(mut n: u64, mut m: u64) -> u64 {
+    // panic if conditions are not met
+    // idiomatic rust
     assert!(n != 0 && m != 0);
 
     while m != 0 {
@@ -49,15 +62,6 @@ fn gcd(mut n: u64, mut m: u64) -> u64 {
     }
 
     n
-}
-
-#[test]
-fn test_moves() {
-    let up2 = Move::Up(2);
-    let down3 = Move::Down(3);
-
-    assert_eq!(2, up2.extract_motion());
-    assert_eq!(-3, down3.extract_motion());
 }
 
 #[test]
@@ -318,4 +322,35 @@ fn test_modularity() {
 
     assert_eq!(23, my_stuff.width);
     assert_eq!(44, my_thing.weight);
+}
+
+#[test]
+fn test_pedants_patience() {
+    #[allow(non_snake_case)]
+    let CamelCaseVariableExist = true;
+    assert_eq!(true, CamelCaseVariableExist);
+
+    // let NotAnotherCamelCaseVariableExist = true; // evil is limited
+}
+
+#[test]
+fn test_structs() {
+    struct Inner {
+        favorite_color: String,
+    }
+
+    struct Outer {
+        favorite_number: u32,
+        inner: Inner,
+    }
+
+    let outer = Outer {
+        favorite_number: 12,
+        inner: Inner {
+            favorite_color: "red".to_string(),
+        },
+    };
+
+    assert_eq!(12, outer.favorite_number);
+    assert_eq!("red", outer.inner.favorite_color);
 }

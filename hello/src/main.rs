@@ -1,7 +1,8 @@
 use std::mem;
 
 mod people;
-use crate::people::Person;
+use self::people::Person;
+// use crate::people::Person; // works as well
 
 enum Move {
     Up(i8),

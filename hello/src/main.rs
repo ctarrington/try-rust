@@ -353,4 +353,18 @@ fn test_structs() {
 
     assert_eq!(12, outer.favorite_number);
     assert_eq!("red", outer.inner.favorite_color);
+
+    let inside = Inner {
+        favorite_color: "blue".to_string(),
+    };
+
+    let outside = Outer {
+        favorite_number: 22,
+        inner: inside,
+    };
+
+    assert_eq!(22, outside.favorite_number);
+    assert_eq!("blue", outside.inner.favorite_color);
+
+    // assert_eq!("blue", inside.favorite_color); // nope value has been moved
 }

@@ -48,7 +48,13 @@ fn main() {
 
     println!("move = {}", Move::Up(2).extract_motion());
     println!("move = {}", Move::Down(2).extract_motion());
-    let list = List::Elem(12, Box::new(List::Elem(13, Box::new(List::Empty))));
+    let list = List::<u32>::Node {
+        value: 12,
+        next: Box::new(List::<u32>::Node {
+            value: 13,
+            next: Box::new(List::<u32>::Empty),
+        }),
+    };
     println!("list = {:?}", list);
 }
 
@@ -265,6 +271,14 @@ fn test_match() {
         _ => -1,
     };
     assert_eq!(3, result);
+
+    let name_number = ("fred", 12);
+    let extracted_number = match name_number {
+        (_, number @ 8..=12) => number,
+        _ => -1,
+    };
+
+    assert_eq!(12, extracted_number);
 }
 
 #[test]

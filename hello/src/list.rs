@@ -1,5 +1,5 @@
 #[derive(Debug)]
-pub enum List {
+pub enum List<T> {
     Empty,
-    Elem(u32, Box<List>),
+    Node { value: T, next: Box<List<T>> },
 }

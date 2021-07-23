@@ -4,6 +4,9 @@ mod people;
 use self::people::Person;
 // use crate::people::Person; // works as well
 
+mod list;
+use self::list::List;
+
 enum Move {
     Up(i8),
     Down(i8),
@@ -35,6 +38,7 @@ fn main() {
         name: String::from("Fred"),
         nick_name: String::from("Freddy"),
         age: 15,
+        friend: None,
     };
 
     println!("fred = {:?}", fred);
@@ -44,6 +48,8 @@ fn main() {
 
     println!("move = {}", Move::Up(2).extract_motion());
     println!("move = {}", Move::Down(2).extract_motion());
+    let list = List::Elem(12, Box::new(List::Elem(13, Box::new(List::Empty))));
+    println!("list = {:?}", list);
 }
 
 /// requires two non zero integers
@@ -82,6 +88,7 @@ fn test_person() {
         name: String::from("Joe"),
         nick_name: String::from("Joey"),
         age: 55,
+        friend: None,
     };
 
     assert_eq!("Joe", joe.name);
@@ -105,6 +112,12 @@ fn test_person() {
         name: String::from("Jane"),
         nick_name: String::from("Janey"),
         age: 54,
+        friend: Some(Box::new(Person {
+            name: String::from("Fred"),
+            nick_name: String::from("Freddy"),
+            age: 55,
+            friend: None,
+        })),
     };
 
     let jane_name = jane.name;
@@ -112,6 +125,7 @@ fn test_person() {
     // assert_eq!("Jane", jane.name); // can not access jane.name since it moved
     assert_eq!(54, jane.age);
     assert_eq!("Janey", jane.nick_name);
+    assert_eq!("Freddy", jane.friend.unwrap().nick_name);
 }
 
 #[test]

@@ -3,6 +3,7 @@ pub struct Person {
     pub name: String,
     pub nick_name: String,
     pub age: u8,
+    pub friend: Option<Box<Person>>,
 }
 
 impl Person {

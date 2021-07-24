@@ -396,3 +396,51 @@ fn test_structs() {
 
     // assert_eq!("blue", inside.favorite_color); // nope value has been moved
 }
+
+#[test]
+fn test_traits() {
+    trait Consumable {
+        fn consume(&self) -> u32;
+    }
+
+    #[derive(Copy, Clone)]
+    enum Fudge {
+        Strawberry = 100,
+        Walnut = 120,
+    }
+
+    struct Meat {
+        quantity: u32,
+    }
+
+    impl Consumable for Fudge {
+        fn consume(&self) -> u32 {
+            *self as u32
+        }
+    }
+
+    impl Consumable for Meat {
+        fn consume(&self) -> u32 {
+            self.quantity * 100
+        }
+    }
+
+    let consumables: Vec<Box<dyn Consumable>> = vec![
+        Box::new(Fudge::Strawberry),
+        Box::new(Meat { quantity: 2 }),
+        Box::new(Fudge::Walnut),
+    ];
+
+    let mut total: u32 = 0;
+    for consumable in consumables.iter() {
+        total += consumable.consume();
+    }
+
+    assert_eq!(420, total);
+    assert_eq!(100, Fudge::Strawberry.consume());
+
+    let sum = consumables
+        .iter()
+        .fold(0, |acc, consumable| acc + consumable.consume());
+    assert_eq!(420, sum);
+}

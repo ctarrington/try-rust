@@ -453,3 +453,51 @@ fn test_traits() {
     assert_eq!(120, calculate_calories(Fudge::Walnut));
     assert_eq!(200, calculate_calories(Meat { quantity: 2 }));
 }
+
+#[test]
+fn test_generic_in_traits() {
+    // the bound that T must implement Sized does not need to be typed
+    // the compiler assumes itSized
+    trait Boxable<T: Sized> {
+        fn box_me(&self) -> Box<T>;
+    }
+
+    impl Boxable<u32> for u32 {
+        fn box_me(&self) -> Box<u32> {
+            Box::new(*self)
+        }
+    }
+
+    #[derive(Copy, Clone)]
+    struct Thing(u32, u32);
+    struct OtherThing {
+        first: u32,
+        second: u32,
+    }
+
+    impl Boxable<Thing> for Thing {
+        fn box_me(&self) -> Box<Thing> {
+            Box::new(*self)
+        }
+    }
+
+    impl Boxable<Thing> for OtherThing {
+        fn box_me(&self) -> Box<Thing> {
+            Box::new(Thing(self.first, self.second))
+        }
+    }
+
+    let boxed_int = 32.box_me();
+    assert_eq!(32, *boxed_int);
+
+    let boxed_thing = Thing(12, 22).box_me();
+    let Thing(_, second) = *boxed_thing;
+    assert_eq!(22, second);
+
+    let boxed_from_other_thing = OtherThing {
+        first: 11,
+        second: 21,
+    }
+    .box_me();
+    assert_eq!(21, boxed_from_other_thing.1);
+}

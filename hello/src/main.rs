@@ -425,6 +425,8 @@ fn test_traits() {
         }
     }
 
+    // runtime polymorphism with a vtable
+    // dyn is essential for heterogeneous collections
     let consumables: Vec<Box<dyn Consumable>> = vec![
         Box::new(Fudge::Strawberry),
         Box::new(Meat { quantity: 2 }),
@@ -443,4 +445,11 @@ fn test_traits() {
         .iter()
         .fold(0, |acc, consumable| acc + consumable.consume());
     assert_eq!(420, sum);
+
+    // generic function gets compiled for each type that is used
+    fn calculate_calories<T: Consumable>(consumable: T) -> u32 {
+        consumable.consume()
+    }
+    assert_eq!(120, calculate_calories(Fudge::Walnut));
+    assert_eq!(200, calculate_calories(Meat { quantity: 2 }));
 }

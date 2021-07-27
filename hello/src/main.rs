@@ -326,6 +326,10 @@ fn test_chained_results() {
 
 #[test]
 fn test_modularity() {
+    fn copy_it<T: Copy>(value: &T) -> T {
+        *value
+    }
+
     mod things {
         pub struct Thing {
             pub weight: u32,
@@ -333,6 +337,7 @@ fn test_modularity() {
     }
 
     mod stuff {
+        #[derive(Copy, Clone)]
         pub struct Stuff {
             pub width: u32,
             pub height: u32,
@@ -348,8 +353,10 @@ fn test_modularity() {
         height: 11,
     };
 
-    assert_eq!(23, my_stuff.width);
     assert_eq!(44, my_thing.weight);
+
+    let more_stuff = copy_it(&my_stuff);
+    assert_eq!(23, more_stuff.width);
 }
 
 #[test]

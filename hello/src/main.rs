@@ -516,3 +516,16 @@ fn test_generic_in_traits() {
     .box_me();
     assert_eq!(21, boxed_from_other_thing.1);
 }
+
+#[test]
+fn test_closures() {
+    fn repeat<F: FnMut()>(mut closure: F, count: u32) {
+        for _ in 0..count {
+            closure();
+        }
+    }
+
+    let mut count = 0;
+    repeat(|| count += 1, 5);
+    assert_eq!(5, count);
+}

@@ -528,4 +528,15 @@ fn test_closures() {
     let mut count = 0;
     repeat(|| count += 1, 5);
     assert_eq!(5, count);
+
+    struct NumberHolder {
+        value: u32,
+    }
+
+    let numbers = 0..20;
+    let even_numbers: Vec<NumberHolder> = numbers
+        .filter(|value| value % 2 == 0)
+        .map(|value| NumberHolder { value })
+        .collect();
+    assert_eq!(2, even_numbers[1].value);
 }

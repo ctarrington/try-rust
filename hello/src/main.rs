@@ -540,3 +540,55 @@ fn test_closures() {
         .collect();
     assert_eq!(2, even_numbers[1].value);
 }
+
+#[test]
+fn test_fibonacci_iterator() {
+    #[derive(Debug)]
+    struct FibonacciIterator {
+        previous: u32,
+        current: u32,
+    }
+
+    impl FibonacciIterator {
+        fn new() -> Self {
+            FibonacciIterator {
+                previous: 0,
+                current: 0,
+            }
+        }
+    }
+
+    impl Iterator for FibonacciIterator {
+        type Item = u32;
+
+        // 0 0 -> 0
+        // 0 1 -> 1
+        // 1 1 -> 1
+
+        fn next(&mut self) -> Option<<Self as Iterator>::Item> {
+            match self.current {
+                0 => {
+                    self.current = 1;
+                    Some(0u32)
+                }
+                _ => {
+                    let temp = self.current;
+                    self.current = self.previous + self.current;
+                    self.previous = temp;
+                    Some(self.previous)
+                }
+            }
+        }
+    }
+
+    let mut fib = FibonacciIterator::new();
+    assert_eq!(0, fib.current);
+
+    assert_eq!(Some(0u32), fib.next());
+    assert_eq!(Some(1u32), fib.next());
+    assert_eq!(Some(1u32), fib.next());
+    assert_eq!(Some(2u32), fib.next());
+    assert_eq!(Some(3u32), fib.next());
+    assert_eq!(Some(5u32), fib.next());
+    assert_eq!(Some(8u32), fib.next());
+}

@@ -553,7 +553,7 @@ fn test_fibonacci_iterator() {
         fn new() -> Self {
             FibonacciIterator {
                 previous: 0,
-                current: 0,
+                current: 1,
             }
         }
     }
@@ -561,34 +561,35 @@ fn test_fibonacci_iterator() {
     impl Iterator for FibonacciIterator {
         type Item = u32;
 
-        // 0 0 -> 0
-        // 0 1 -> 1
-        // 1 1 -> 1
-
         fn next(&mut self) -> Option<<Self as Iterator>::Item> {
-            match self.current {
-                0 => {
-                    self.current = 1;
-                    Some(0u32)
-                }
-                _ => {
-                    let temp = self.current;
-                    self.current = self.previous + self.current;
-                    self.previous = temp;
-                    Some(self.previous)
-                }
-            }
+            let temp = self.current;
+            self.current = self.previous + self.current;
+            self.previous = temp;
+            Some(self.previous)
         }
     }
 
-    let mut fib = FibonacciIterator::new();
-    assert_eq!(0, fib.current);
+    let fib = FibonacciIterator::new();
+    let results: Vec<u32> = fib.take(6).collect();
+    assert_eq!(vec![1, 1, 2, 3, 5, 8], results);
+}
 
-    assert_eq!(Some(0u32), fib.next());
-    assert_eq!(Some(1u32), fib.next());
-    assert_eq!(Some(1u32), fib.next());
-    assert_eq!(Some(2u32), fib.next());
-    assert_eq!(Some(3u32), fib.next());
-    assert_eq!(Some(5u32), fib.next());
-    assert_eq!(Some(8u32), fib.next());
+#[test]
+fn test_compact_fibonacci_iterator() {
+    // function that creates something that implements Iterator
+    fn fibonacci_factory() -> impl Iterator<Item = u32> {
+        let mut state = (0, 1);
+
+        // move closure over state
+        let fib_closure = move || {
+            state = (state.1, state.0 + state.1);
+            Some(state.0)
+        };
+
+        std::iter::from_fn(fib_closure)
+    }
+
+    let fib = fibonacci_factory();
+    let results: Vec<u32> = fib.take(6).collect();
+    assert_eq!(vec![1, 1, 2, 3, 5, 8], results);
 }

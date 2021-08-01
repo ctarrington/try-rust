@@ -605,3 +605,11 @@ fn test_borrowed_iterator() {
     assert_eq!(vec![0, 1, 2, 3, 4], first);
     assert_eq!(vec![5, 6, 7, 8, 9, 10], second);
 }
+
+#[test]
+fn test_character_vs_byte_iterators() {
+    assert_eq!(1, "π".chars().count());
+    assert_eq!(2, "π".bytes().count());
+    assert_eq!(1, "🦀".chars().count());
+    assert_eq!(4, "🦀".bytes().count());
+}

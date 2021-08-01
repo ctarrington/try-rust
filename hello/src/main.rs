@@ -593,3 +593,15 @@ fn test_compact_fibonacci_iterator() {
     let results: Vec<u32> = fib.take(6).collect();
     assert_eq!(vec![1, 1, 2, 3, 5, 8], results);
 }
+
+#[test]
+fn test_borrowed_iterator() {
+    let mut numbers = 0..=10;
+
+    // need a mutable ref and take it by reference in order to borrow and return it
+    let first: Vec<_> = numbers.by_ref().take(5).collect();
+    let second: Vec<_> = numbers.take(6).collect();
+
+    assert_eq!(vec![0, 1, 2, 3, 4], first);
+    assert_eq!(vec![5, 6, 7, 8, 9, 10], second);
+}

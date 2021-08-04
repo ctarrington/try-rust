@@ -5,12 +5,25 @@
   </head>
   <body>
     <h1>Hello</h1>
+        <input id="number" type="number"></input>
+        <input id="go" type="button" value="Go"></input>
+        <div>result: <span id="result"></span></div>
+
         <script>
           fetchAndInstantiate('rustwasmhello.wasm').then(function(instance) {
-                      const number = 10;
-                      const result = instance.exports.add_one(number);
+                      const addOne = instance.exports.add_one;
+                      
+                      const numberInput = document.getElementById('number');
+                      const goButton = document.getElementById('go');
+                      const resultSpan = document.getElementById('result');
+
+                      goButton.addEventListener('click', () => {
+                      const number = numberInput.value;
+                      const result = addOne(number);
+                      resultSpan.innerHTML = result;
                       console.log(result);
-                    });
+                });
+          });
         </script>
   </body>
 </html>

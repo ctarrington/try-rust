@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <script src="utils.js"></script>
+  </head>
+  <body>
+    <h1>Hello</h1>
+        <script>
+          fetchAndInstantiate('rustwasmhello.wasm').then(function(instance) {
+                      const number = 10;
+                      const result = instance.exports.add_one(number);
+                      console.log(result);
+                    });
+        </script>
+  </body>
+</html>

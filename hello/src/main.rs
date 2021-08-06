@@ -539,6 +539,13 @@ fn test_closures() {
         .map(|value| NumberHolder { value })
         .collect();
     assert_eq!(2, even_numbers[1].value);
+
+    // irrefutable match is needed to destructure in let and as arguments
+    fn add((x, y): (u32, u32)) -> u32 {
+        x + y
+    }
+
+    assert_eq!(5, add((3, 2)));
 }
 
 #[test]

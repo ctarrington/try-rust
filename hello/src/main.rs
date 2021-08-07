@@ -549,6 +549,22 @@ fn test_closures() {
 }
 
 #[test]
+fn test_returned_closures() {
+    fn create_greeter(salutation: String) -> Box<dyn Fn(String) -> String> {
+        Box::new(move |name: String| format!("{}, {}", salutation, name))
+    }
+
+    let informal_greeting = create_greeter("Hello".to_string());
+    let formal_greeting = create_greeter("Greetings to you my good friend".to_string());
+    assert_eq!("Hello, Fred", informal_greeting("Fred".to_string()));
+    assert_eq!("Hello, Ted", informal_greeting("Ted".to_string()));
+    assert_eq!(
+        "Greetings to you my good friend, Ted",
+        formal_greeting("Ted".to_string())
+    );
+}
+
+#[test]
 fn test_fibonacci_iterator() {
     #[derive(Debug)]
     struct FibonacciIterator {

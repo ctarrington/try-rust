@@ -1,8 +1,15 @@
 use std::io::prelude::*;
+use std::io::BufReader;
 use std::net::{TcpListener, TcpStream};
 
 async fn respond(mut stream: TcpStream) {
-    let response = format!("{}", "hello");
+    let mut raw = String::new();
+    BufReader::new(&stream)
+        .read_to_string(&mut raw)
+        .expect("error reading stream");
+
+    let response = format!("{}", raw);
+    println!("reply {}", response);
     stream.write(response.as_bytes()).unwrap();
     stream.flush().unwrap();
 }

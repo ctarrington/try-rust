@@ -107,7 +107,7 @@ impl Universe {
         }
     }
 
-    pub fn renderAsText(&self) -> String {
+    pub fn render_as_text(&self) -> String {
         self.to_string()
     }
 }

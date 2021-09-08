@@ -25,18 +25,18 @@ const createMovingAverage = (thesize) => {
     return sum/values.length;
   };
   
-  return add;
+  return {add};
 };
 
-const add = createMovingAverage(1000);
+const movingAverage = createMovingAverage(1000);
 
 const renderLoop = () => {
   const start = performance.now();
-  pre.textContent = universe.renderAsText();
+  pre.textContent = universe.render_as_text();
   universe.tick();
 
   const elapsed = performance.now() - start;
-  const average = add(elapsed);
+  const average = movingAverage.add(elapsed);
 
   elapsedSpan.textContent = elapsed.toFixed(2);
   averageElapsedSpan.textContent = average.toFixed(2);

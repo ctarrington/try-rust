@@ -6,7 +6,7 @@ const createMovingAverage = (thesize) => {
   let sum = 0;
   let minValue = Number.MAX_VALUE;
   let maxValue = Number.MIN_VALUE;
-  const values = [];
+  let values = [];
 
   const add = (value) => {
 
@@ -29,8 +29,16 @@ const createMovingAverage = (thesize) => {
 
   const min = () => { return minValue; };
   const max = () => { return maxValue; };
+  const clear = () => {
+    currentPosition = 0;
+    sum = 0;
+    minValue = Number.MAX_VALUE;
+    maxValue = Number.MIN_VALUE;
+    values = [];
+  };
+    
   
-  return {add, min, max};
+  return {add, clear, min, max};
 };
 
 export {createMovingAverage};

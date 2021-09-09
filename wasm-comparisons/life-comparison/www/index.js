@@ -1,65 +1,11 @@
-import { memory } from "life-comparison/life_comparison_bg";
 import { Universe, Cell } from 'life-comparison';
-import { createMovingAverage } from './utils';
+import { createMovingAverage, drawGrid, drawCellsFromReference } from './utils';
 
 const CELL_SIZE = 5;
-const GRID_COLOR = '#CCCCCC';
-const DEAD_COLOR = '#FFFFFF';
-const ALIVE_COLOR = '#000000';
 
 const defaultUniverse = Universe.new();
 const width = defaultUniverse.width();
 const height = defaultUniverse.height();
-
-const getIndex = (row, column) => {
-    return row * width + column;
-};
-
-const drawGrid = (ctx) => {
-  ctx.beginPath();
-  ctx.strokeStyle = GRID_COLOR;
-
-  // Vertical lines.
-  for (let columnIndex = 0; columnIndex <= width; columnIndex++) {
-    ctx.moveTo(columnIndex * (CELL_SIZE + 1) + 1, 0);
-    ctx.lineTo(columnIndex * (CELL_SIZE + 1) + 1, (CELL_SIZE + 1) * height + 1);
-  }
-  
-   // Horizontal lines.
-   for (let rowIndex = 0; rowIndex <= height; rowIndex++) {
-     ctx.moveTo(0, rowIndex * (CELL_SIZE + 1) + 1);
-     ctx.lineTo((CELL_SIZE + 1) * width + 1, rowIndex * (CELL_SIZE + 1) + 1);
-   }
- 
-  ctx.stroke();
-};
-
-const drawCells = (ctx, universe) => {
-
-  const cellsPtr = universe.cells();
-  const cells = new Uint8Array(memory.buffer, cellsPtr, width * height);
-
-  ctx.beginPath();
-
-  for (let row = 0; row < height; row++) {
-    for (let col = 0; col < width; col++) {
-      const idx = getIndex(row, col);
-
-      ctx.fillStyle = cells[idx] === Cell.Dead
-        ? DEAD_COLOR
-        : ALIVE_COLOR;
-
-      ctx.fillRect(
-        col * (CELL_SIZE + 1) + 1,
-        row * (CELL_SIZE + 1) + 1,
-        CELL_SIZE,
-        CELL_SIZE
-      );
-    }
-  }
-
-  ctx.stroke();
-};
 
 const pre = document.getElementById('game-of-life-text');
 const canvas = document.getElementById('game-of-life-canvas');
@@ -72,7 +18,7 @@ const maximumElapsedSpan = document.getElementById('maximum-elapsed-span');
 const currentScenarioSpan = document.getElementById('current-scenario-span');
 const incrementScenarioButton = document.getElementById('increment-scenario-button');
 
-const rustPassResultsScenario = {
+const rustPassResultsAsTextScenario = {
   createUniverse: () => Universe.new(),
   render: () => {
     pre.textContent = universe.render_as_text();
@@ -98,8 +44,8 @@ const rustPassResultsReferenceScenario = {
   },
   render: () => {
     const ctx = canvas.getContext('2d');
-    drawGrid(ctx);
-    drawCells(ctx, universe);
+    drawGrid(ctx, width, height);
+    drawCellsFromReference(ctx, universe, width, height);
     
     universe.tick();
   },
@@ -109,7 +55,7 @@ const rustPassResultsReferenceScenario = {
   name: 'Pass a reference to the results',
 };
 
-const scenarios = [rustPassResultsScenario, rustPassResultsReferenceScenario];
+const scenarios = [rustPassResultsAsTextScenario, rustPassResultsReferenceScenario];
 
 const incrementScenario = () => {
   if (currentScenarioCounter >= 0) {

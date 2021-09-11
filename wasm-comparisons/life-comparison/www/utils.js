@@ -100,4 +100,20 @@ const drawCellsFromReference = (ctx, universe, width, height) => {
   ctx.stroke();
 };
 
-export {createMovingAverage, drawCellsFromReference, drawGrid};
+const formatCellsFromReference = (universe, width, height) => {
+  const cellsPtr = universe.cells();
+  const cells = new Uint8Array(memory.buffer, cellsPtr, width * height);
+
+  let results = '';
+  for (let row = 0; row < height; row++) {
+    for (let col = 0; col < width; col++) {
+      const idx = getIndex(row, col, width, height);
+      results += cells[idx] === Cell.Dead ? '◻' : '◼';
+    }
+    results += '\n';
+  }
+
+  return results;
+};
+
+export {createMovingAverage, drawCellsFromReference, drawGrid, formatCellsFromReference};

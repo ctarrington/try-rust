@@ -1,6 +1,6 @@
 import { Universe, Cell } from 'life-comparison';
 import { createJSUniverse, JSCell } from './js-universe';
-import { createMovingAverage, drawGrid, drawCellsFromReference, formatCellsFromReference, formatCellsFromView} from './utils';
+import { createMovingAverage, drawGrid, drawCellsFromReference, formatCellsFromReference, drawCellsFromView, formatCellsFromView} from './utils';
 
 const CELL_SIZE = 5;
 
@@ -20,6 +20,7 @@ const minimumElapsedSpan = document.getElementById('minimum-elapsed-span');
 const maximumElapsedSpan = document.getElementById('maximum-elapsed-span');
 const currentScenarioSpan = document.getElementById('current-scenario-span');
 const incrementScenarioButton = document.getElementById('increment-scenario-button');
+const summaryPre = document.getElementById('summary');
 
 const rustPassResultsAsTextScenario = {
   universe: Universe.new(),
@@ -30,21 +31,20 @@ const rustPassResultsAsTextScenario = {
   clear: () => {
     pre.textContent = '';
   },
-  name: 'Pass the results as a string',
+  name: 'Rust runs the universe and builds the string which it passes to JavaScript for display',
   movingAverage: createMovingAverage(1000),
 };
 
 const rustPassResultsReferenceTextInJavaScriptScenario = {
   universe: Universe.new(),
   render: () => {
-
     pre.textContent = formatCellsFromReference(rustPassResultsReferenceTextInJavaScriptScenario.universe, width, height);
     rustPassResultsReferenceTextInJavaScriptScenario.universe.tick();
   },
   clear: () => {
     pre.textContent = '';
   },
-  name: 'Pass a reference to the results, build the text in JavaScript',
+  name: 'Rust passes a reference to the cells to JavaScript which builds the text output',
   movingAverage: createMovingAverage(1000),
 };
 
@@ -62,7 +62,7 @@ const rustPassResultsReferenceToCanvasScenario = {
   clear: () => {
     canvas.style.display = 'none';
   },
-  name: 'Pass a reference to the results',
+  name: 'Rust passes a reference to the cells to JavaScript which paints the  canvas',
   movingAverage: createMovingAverage(1000),
 };
 
@@ -75,7 +75,7 @@ const jsUniverseJSText = {
   clear: () => {
     pre.textContent = '';
   },
-  name: 'Universe in JavaScript, build the text in JavaScript',
+  name: 'JavaScript runs the universe and builds the text output',
   movingAverage: createMovingAverage(1000),
 };
 
@@ -85,19 +85,19 @@ const jsResultsToCanvasScenario = {
     canvas.style.display = '';
     const ctx = canvas.getContext('2d');
     drawGrid(ctx, width, height);
-    drawCellsFromReference(ctx, jsResultsToCanvasScenario.universe, width, height);
+    drawCellsFromView(ctx, jsResultsToCanvasScenario.universe, width, height);
     
     jsResultsToCanvasScenario.universe.tick();
   },
   clear: () => {
     canvas.style.display = 'none';
   },
-  name: 'Pass a reference to the results',
+  name: 'JavaScript runs the universe and paints the canvas',
   movingAverage: createMovingAverage(1000),
 };
 
 let currentScenarioCounter = -1;
-const scenarios = [rustPassResultsAsTextScenario, rustPassResultsReferenceTextInJavaScriptScenario, rustPassResultsReferenceToCanvasScenario, jsUniverseJSText];
+const scenarios = [jsUniverseJSText, rustPassResultsAsTextScenario, rustPassResultsReferenceTextInJavaScriptScenario, jsResultsToCanvasScenario, rustPassResultsReferenceToCanvasScenario,];
 
 const incrementScenario = () => {
   if (currentScenarioCounter >= 0) {
@@ -106,6 +106,13 @@ const incrementScenario = () => {
 
   currentScenarioCounter = (currentScenarioCounter + 1) % scenarios.length;
   const scenario = scenarios[currentScenarioCounter];
+
+  let summaryContents = '';
+  for (const scenario of scenarios) {
+    summaryContents += '' + scenario.movingAverage.average().toFixed(2) + ' ' + scenario.movingAverage.max().toFixed(2) + ' ' + scenario.name + '\n';
+  }
+
+  summaryPre.textContent = summaryContents;
 };
 
 incrementScenario();

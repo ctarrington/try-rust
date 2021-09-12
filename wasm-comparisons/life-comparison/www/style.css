@@ -9,3 +9,12 @@ body {
   align-items: center;
   justify-content: center;
 }
+
+div.universe {
+  overflow: hidden;
+}
+
+pre#game-of-life-text {
+  transform: scale(0.5);
+  transform-origin: left top;
+}

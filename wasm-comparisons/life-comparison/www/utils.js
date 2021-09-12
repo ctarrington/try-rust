@@ -38,9 +38,10 @@ const createMovingAverage = (thesize) => {
     maxValue = Number.MIN_VALUE;
     values = [];
   };
-    
+
+  const average = () => values.length > 0 ? sum/values.length : 0;
   
-  return {add, clear, min, max};
+  return {add, average, clear, min, max};
 };
 
 
@@ -74,10 +75,16 @@ const drawGrid = (ctx, width, height) => {
 };
 
 const drawCellsFromReference = (ctx, universe, width, height) => {
-
   const cellsPtr = universe.cells();
   const cells = new Uint8Array(memory.buffer, cellsPtr, width * height);
+  drawCellsFromBuffer(ctx, cells, width, height);  
+};
 
+const drawCellsFromView = (ctx, universe, width, height) => {
+  drawCellsFromBuffer(ctx, universe.cells(), width, height); 
+};
+
+const drawCellsFromBuffer = (ctx, cells, width, height) => {
   ctx.beginPath();
 
   for (let row = 0; row < height; row++) {
@@ -123,4 +130,4 @@ const formatCellsFromBuffer = (cells, width, height) => {
   return results;
 };
 
-export {createMovingAverage, drawCellsFromReference, drawGrid, formatCellsFromReference, formatCellsFromView};
+export {createMovingAverage, drawCellsFromReference, drawGrid, formatCellsFromReference, formatCellsFromView, drawCellsFromView};

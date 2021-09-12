@@ -7,8 +7,6 @@
   </head>
   <body>
     <noscript>This page contains webassembly and javascript content, please enable javascript in your browser.</noscript>
-    <pre id="game-of-life-text"></pre>
-    <canvas id="game-of-life-canvas"></canvas>
     <div>
       Current Scenario: <span id="current-scenario-span"></span>
     </div>
@@ -18,6 +16,11 @@
     </div>
     <div> 
       Extrema: <span id="minimum-elapsed-span"></span> to <span id="maximum-elapsed-span"></span><span> milliseconds</span>
+    </div>
+    <pre id="summary"></pre>
+    <div class="universe">
+      <pre id="game-of-life-text"></pre>
+      <canvas id="game-of-life-canvas"></canvas>
     </div>
     <script src="./bootstrap.js"></script>
   </body>

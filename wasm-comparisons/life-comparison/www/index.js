@@ -1,5 +1,6 @@
 import { Universe, Cell } from 'life-comparison';
-import { createMovingAverage, drawGrid, drawCellsFromReference, formatCellsFromReference } from './utils';
+import { createJSUniverse, JSCell } from './js-universe';
+import { createMovingAverage, drawGrid, drawCellsFromReference, formatCellsFromReference, formatCellsFromView} from './utils';
 
 const CELL_SIZE = 5;
 
@@ -48,15 +49,45 @@ const rustPassResultsReferenceTextInJavaScriptScenario = {
 };
 
 
-const rustPassResultsReferenceScenario = {
+const rustPassResultsReferenceToCanvasScenario = {
   universe: Universe.new(),
   render: () => {
     canvas.style.display = '';
     const ctx = canvas.getContext('2d');
     drawGrid(ctx, width, height);
-    drawCellsFromReference(ctx, rustPassResultsReferenceScenario.universe, width, height);
+    drawCellsFromReference(ctx, rustPassResultsReferenceToCanvasScenario.universe, width, height);
     
-    rustPassResultsReferenceScenario.universe.tick();
+    rustPassResultsReferenceToCanvasScenario.universe.tick();
+  },
+  clear: () => {
+    canvas.style.display = 'none';
+  },
+  name: 'Pass a reference to the results',
+  movingAverage: createMovingAverage(1000),
+};
+
+const jsUniverseJSText = {
+  universe: createJSUniverse(width, height),
+  render: () => {
+    pre.textContent = formatCellsFromView(jsUniverseJSText.universe, width, height);
+    jsUniverseJSText.universe.tick();
+  },
+  clear: () => {
+    pre.textContent = '';
+  },
+  name: 'Universe in JavaScript, build the text in JavaScript',
+  movingAverage: createMovingAverage(1000),
+};
+
+const jsResultsToCanvasScenario = {
+  universe: createJSUniverse(width, height),
+  render: () => {
+    canvas.style.display = '';
+    const ctx = canvas.getContext('2d');
+    drawGrid(ctx, width, height);
+    drawCellsFromReference(ctx, jsResultsToCanvasScenario.universe, width, height);
+    
+    jsResultsToCanvasScenario.universe.tick();
   },
   clear: () => {
     canvas.style.display = 'none';
@@ -66,7 +97,7 @@ const rustPassResultsReferenceScenario = {
 };
 
 let currentScenarioCounter = -1;
-const scenarios = [rustPassResultsAsTextScenario, rustPassResultsReferenceTextInJavaScriptScenario, rustPassResultsReferenceScenario];
+const scenarios = [rustPassResultsAsTextScenario, rustPassResultsReferenceTextInJavaScriptScenario, rustPassResultsReferenceToCanvasScenario, jsUniverseJSText];
 
 const incrementScenario = () => {
   if (currentScenarioCounter >= 0) {

@@ -103,7 +103,14 @@ const drawCellsFromReference = (ctx, universe, width, height) => {
 const formatCellsFromReference = (universe, width, height) => {
   const cellsPtr = universe.cells();
   const cells = new Uint8Array(memory.buffer, cellsPtr, width * height);
+  return formatCellsFromBuffer(cells, width, height); 
+};
 
+const formatCellsFromView = (universe, width, height) => {
+  return formatCellsFromBuffer(universe.cells(), width, height); 
+};
+
+const formatCellsFromBuffer = (cells, width, height) => {
   let results = '';
   for (let row = 0; row < height; row++) {
     for (let col = 0; col < width; col++) {
@@ -116,4 +123,4 @@ const formatCellsFromReference = (universe, width, height) => {
   return results;
 };
 
-export {createMovingAverage, drawCellsFromReference, drawGrid, formatCellsFromReference};
+export {createMovingAverage, drawCellsFromReference, drawGrid, formatCellsFromReference, formatCellsFromView};

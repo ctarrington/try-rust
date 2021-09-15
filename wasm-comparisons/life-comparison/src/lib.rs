@@ -1,5 +1,6 @@
 mod utils;
 
+use std::convert::TryInto;
 use std::fmt;
 
 use wasm_bindgen::prelude::*;
@@ -15,11 +16,12 @@ extern "C" {
     fn alert(s: &str);
 }
 
-const WIDTH: usize = 128;
-const HEIGHT: usize = 128;
+const WIDTH: i32 = 128;
+const HEIGHT: i32 = 128;
+const CELL_COUNT: usize = WIDTH as usize * HEIGHT as usize;
 
 fn get_index(row: usize, column: usize) -> usize {
-    (row * WIDTH + column) as usize
+    (row * WIDTH as usize + column) as usize
 }
 
 #[wasm_bindgen]
@@ -32,16 +34,14 @@ pub enum Cell {
 
 #[wasm_bindgen]
 pub struct Universe {
-    width: usize,
-    height: usize,
     current_index: usize,
     previous_index: usize,
-    cells_list: [[Cell; WIDTH * HEIGHT]; 2],
+    cells_list: [[Cell; CELL_COUNT]; 2],
 }
 
 #[wasm_bindgen]
 impl Universe {
-    fn get_value(&self, row: usize, column: usize) -> u32 {
+    fn get_value(&self, row: i32, column: i32) -> u32 {
         let mut adjusted_row = row;
         let mut adjusted_column = column;
 
@@ -61,10 +61,13 @@ impl Universe {
             adjusted_column = 0;
         }
 
-        self.cells_list[self.previous_index][get_index(adjusted_row, adjusted_column)] as u32
+        self.cells_list[self.previous_index][get_index(
+            adjusted_row.try_into().unwrap(),
+            adjusted_column.try_into().unwrap(),
+        )] as u32
     }
 
-    fn live_neighbor_count(&self, row: usize, column: usize) -> u32 {
+    fn live_neighbor_count(&self, row: i32, column: i32) -> u32 {
         let mut count = 0;
         for ri in row - 1..=row + 1 {
             for ci in column - 1..=column + 1 {
@@ -81,9 +84,9 @@ impl Universe {
         self.previous_index = self.current_index;
         self.current_index = (self.current_index + 1) % 2;
 
-        for row in 0..self.height {
-            for col in 0..self.width {
-                let idx = get_index(row, col);
+        for row in 0..HEIGHT {
+            for col in 0..WIDTH {
+                let idx = get_index(row.try_into().unwrap(), col.try_into().unwrap());
 
                 let new_value = match (
                     self.cells_list[self.previous_index][idx],
@@ -110,20 +113,18 @@ impl Universe {
     }
 
     pub fn new() -> Universe {
-        let mut cells = [Cell::Dead; WIDTH * HEIGHT];
+        let mut cells = [Cell::Dead; CELL_COUNT];
 
-        for index in 0..WIDTH * HEIGHT {
+        for index in 0..CELL_COUNT {
             if index % 2 == 0 || index % 7 == 0 {
                 cells[index] = Cell::Alive;
             }
         }
 
         Universe {
-            width: WIDTH,
-            height: HEIGHT,
             previous_index: 1,
             current_index: 0,
-            cells_list: [cells, [Cell::Dead; WIDTH * HEIGHT]],
+            cells_list: [cells, [Cell::Dead; CELL_COUNT]],
         }
     }
 
@@ -131,12 +132,12 @@ impl Universe {
         self.to_string()
     }
 
-    pub fn width(&self) -> usize {
-        self.width
+    pub fn width(&self) -> i32 {
+        WIDTH
     }
 
-    pub fn height(&self) -> usize {
-        self.height
+    pub fn height(&self) -> i32 {
+        HEIGHT
     }
 
     pub fn cells(&self) -> *const Cell {
@@ -146,9 +147,10 @@ impl Universe {
 
 impl fmt::Display for Universe {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for row in 0..self.height {
-            for col in 0..self.width {
-                let cell = self.cells_list[self.current_index][get_index(row, col)];
+        for row in 0..HEIGHT {
+            for col in 0..WIDTH {
+                let cell = self.cells_list[self.current_index]
+                    [get_index(row.try_into().unwrap(), col.try_into().unwrap())];
                 let symbol = if cell == Cell::Dead { '◻' } else { '◼' };
                 write!(f, "{}", symbol)?;
             }

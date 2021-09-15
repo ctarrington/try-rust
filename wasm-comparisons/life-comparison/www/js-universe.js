@@ -24,11 +24,12 @@ const createJSUniverse = (width, height) => {
     return cells[getIndex(adjustedRow, adjustedCol)];
   };
 
-  let buffer = new ArrayBuffer(width * height);
-  let cells = new Uint8Array(buffer);
+  let current = 0;
+  const buffers = [new ArrayBuffer(width * height), new ArrayBuffer(width * height)];
+  const cells_list = [new Uint8Array(buffers[0]), new Uint8Array(buffers[1])];
 
-  for (let index = 0; index < cells.length; index++) {
-    cells[index] = index % 2 == 0 || index % 7 == 0 ? 1 : 0;
+  for (let index = 0; index < cells_list[0].length; index++) {
+    cells_list[0][index] = index % 2 == 0 || index % 7 == 0 ? 1 : 0;
   }
 
   const countNeighbors = (cells, row_ctr, col_ctr) => {
@@ -45,9 +46,9 @@ const createJSUniverse = (width, height) => {
   }
 
   const tick = () => {
-    const oldCells = cells;
-    buffer = new ArrayBuffer(width * height);
-    cells = new Uint8Array(buffer);
+    const oldCells = cells_list[current];
+    current = (current + 1) % 2;
+    const cells = cells_list[current];
 
     for (let row_ctr = 0; row_ctr < height; row_ctr++) {
       for (let col_ctr = 0; col_ctr < width; col_ctr++) {
@@ -69,7 +70,7 @@ const createJSUniverse = (width, height) => {
   };
 
   return {
-    cells: () => cells,
+    cells: () => cells_list[current],
     tick,
   };
 };

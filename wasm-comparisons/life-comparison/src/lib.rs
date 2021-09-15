@@ -15,6 +15,13 @@ extern "C" {
     fn alert(s: &str);
 }
 
+const WIDTH: usize = 128;
+const HEIGHT: usize = 128;
+
+fn get_index(row: usize, column: usize) -> usize {
+    (row * WIDTH + column) as usize
+}
+
 #[wasm_bindgen]
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -25,44 +32,63 @@ pub enum Cell {
 
 #[wasm_bindgen]
 pub struct Universe {
-    width: u32,
-    height: u32,
-    cells: Vec<Cell>,
+    width: usize,
+    height: usize,
+    current_index: usize,
+    previous_index: usize,
+    cells_list: [[Cell; WIDTH * HEIGHT]; 2],
 }
 
 #[wasm_bindgen]
 impl Universe {
-    fn get_index(&self, row: u32, column: u32) -> usize {
-        (row * self.width + column) as usize
+    fn get_value(&self, row: usize, column: usize) -> u32 {
+        let mut adjusted_row = row;
+        let mut adjusted_column = column;
+
+        if row < 0 {
+            adjusted_row = HEIGHT - 1;
+        }
+
+        if row >= HEIGHT {
+            adjusted_row = 0;
+        }
+
+        if column < 0 {
+            adjusted_column = HEIGHT - 1;
+        }
+
+        if column >= HEIGHT {
+            adjusted_column = 0;
+        }
+
+        self.cells_list[self.previous_index][get_index(adjusted_row, adjusted_column)] as u32
     }
 
-    fn live_neighbor_count(&self, row: u32, column: u32) -> u8 {
+    fn live_neighbor_count(&self, row: usize, column: usize) -> u32 {
         let mut count = 0;
-        for delta_row in [self.height - 1, 0, 1].iter().cloned() {
-            for delta_col in [self.width - 1, 0, 1].iter().cloned() {
-                if delta_row == 0 && delta_col == 0 {
-                    continue;
+        for ri in row - 1..=row + 1 {
+            for ci in column - 1..=column + 1 {
+                if ri != row || ci != column {
+                    count += self.get_value(ri, ci);
                 }
-
-                let neighbor_row = (row + delta_row) % self.height;
-                let neighbor_col = (column + delta_col) % self.width;
-                let idx = self.get_index(neighbor_row, neighbor_col);
-                count += self.cells[idx] as u8;
             }
         }
+
         count
     }
 
     pub fn tick(&mut self) {
-        let mut next = self.cells.clone();
+        self.previous_index = self.current_index;
+        self.current_index = (self.current_index + 1) % 2;
 
         for row in 0..self.height {
             for col in 0..self.width {
-                let idx = self.get_index(row, col);
-                let cell = self.cells[idx];
-                let live_neighbors = self.live_neighbor_count(row, col);
+                let idx = get_index(row, col);
 
-                let next_cell = match (cell, live_neighbors) {
+                let new_value = match (
+                    self.cells_list[self.previous_index][idx],
+                    self.live_neighbor_count(row, col),
+                ) {
                     // Rule 1: Any live cell with fewer than two live neighbours
                     // dies, as if caused by underpopulation.
                     (Cell::Alive, x) if x < 2 => Cell::Dead,
@@ -78,32 +104,26 @@ impl Universe {
                     // All other cells remain in the same state.
                     (otherwise, _) => otherwise,
                 };
-
-                next[idx] = next_cell;
+                self.cells_list[self.current_index][idx] = new_value;
             }
         }
-
-        self.cells = next;
     }
 
     pub fn new() -> Universe {
-        let width = 128;
-        let height = 128;
+        let mut cells = [Cell::Dead; WIDTH * HEIGHT];
 
-        let cells = (0..width * height)
-            .map(|i| {
-                if i % 2 == 0 || i % 7 == 0 {
-                    Cell::Alive
-                } else {
-                    Cell::Dead
-                }
-            })
-            .collect();
+        for index in 0..WIDTH * HEIGHT {
+            if index % 2 == 0 || index % 7 == 0 {
+                cells[index] = Cell::Alive;
+            }
+        }
 
         Universe {
-            width,
-            height,
-            cells,
+            width: WIDTH,
+            height: HEIGHT,
+            previous_index: 1,
+            current_index: 0,
+            cells_list: [cells, [Cell::Dead; WIDTH * HEIGHT]],
         }
     }
 
@@ -111,23 +131,24 @@ impl Universe {
         self.to_string()
     }
 
-    pub fn width(&self) -> u32 {
+    pub fn width(&self) -> usize {
         self.width
     }
 
-    pub fn height(&self) -> u32 {
+    pub fn height(&self) -> usize {
         self.height
     }
 
     pub fn cells(&self) -> *const Cell {
-        self.cells.as_ptr()
+        self.cells_list[self.current_index].as_ptr()
     }
 }
 
 impl fmt::Display for Universe {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for line in self.cells.as_slice().chunks(self.width as usize) {
-            for &cell in line {
+        for row in 0..self.height {
+            for col in 0..self.width {
+                let cell = self.cells_list[self.current_index][get_index(row, col)];
                 let symbol = if cell == Cell::Dead { '◻' } else { '◼' };
                 write!(f, "{}", symbol)?;
             }

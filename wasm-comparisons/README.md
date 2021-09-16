@@ -8,4 +8,10 @@ find . -name "*.rs" | entr -r wasm-pack build
 in www run     
 npm start    
 
+## todo
+* draw on canvas from rust
+* profile rust code
+* other ideas - math? graph algorithms? what makes it worth the bother?
+
+
 

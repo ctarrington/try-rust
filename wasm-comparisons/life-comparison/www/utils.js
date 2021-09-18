@@ -107,6 +107,14 @@ const drawCellsFromBuffer = (ctx, cells, width, height) => {
   ctx.stroke();
 };
 
+const copyImageFromBuffer = (ctx, universe, width, height) => {
+    const imagePtr = universe.render_to_image();
+    const imageArray = new Uint8ClampedArray(memory.buffer, imagePtr, 4 * width * height);
+    const image = new ImageData(imageArray, width, height);
+
+    ctx.putImageData(image, 0, 0);
+}
+
 const formatCellsFromReference = (universe, width, height) => {
   const cellsPtr = universe.cells();
   const cells = new Uint8Array(memory.buffer, cellsPtr, width * height);
@@ -130,4 +138,4 @@ const formatCellsFromBuffer = (cells, width, height) => {
   return results;
 };
 
-export {createMovingAverage, drawCellsFromReference, drawGrid, formatCellsFromReference, formatCellsFromView, drawCellsFromView};
+export {createMovingAverage, drawCellsFromReference, drawGrid, formatCellsFromReference, formatCellsFromView, drawCellsFromView, copyImageFromBuffer};

@@ -1,6 +1,6 @@
 import { Universe, Cell } from 'life-comparison';
 import { createJSUniverse, JSCell } from './js-universe';
-import { createMovingAverage, drawGrid, drawCellsFromReference, formatCellsFromReference, drawCellsFromView, formatCellsFromView} from './utils';
+import { createMovingAverage, drawGrid, drawCellsFromReference, formatCellsFromReference, drawCellsFromView, formatCellsFromView, copyImageFromBuffer} from './utils';
 
 const CELL_SIZE = 5;
 
@@ -48,7 +48,6 @@ const rustPassResultsReferenceTextInJavaScriptScenario = {
   movingAverage: createMovingAverage(1000),
 };
 
-
 const rustPassResultsReferenceToCanvasScenario = {
   universe: Universe.new(),
   render: () => {
@@ -63,6 +62,22 @@ const rustPassResultsReferenceToCanvasScenario = {
     canvas.style.display = 'none';
   },
   name: 'Rust passes a reference to the cells to JavaScript which paints the  canvas',
+  movingAverage: createMovingAverage(1000),
+};
+
+const rustPassImageToCanvasScenario = {
+  universe: Universe.new(),
+  render: () => {
+    canvas.style.display = '';
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    copyImageFromBuffer(ctx, rustPassImageToCanvasScenario.universe, width, height);
+    rustPassImageToCanvasScenario.universe.tick();
+  },
+  clear: () => {
+    canvas.style.display = 'none';
+  },
+  name: 'Rust passes a reference to an image to JavaScript which fills in the  canvas',
   movingAverage: createMovingAverage(1000),
 };
 
@@ -97,7 +112,7 @@ const jsResultsToCanvasScenario = {
 };
 
 let currentScenarioCounter = -1;
-const scenarios = [jsUniverseJSText, rustPassResultsAsTextScenario, rustPassResultsReferenceTextInJavaScriptScenario, jsResultsToCanvasScenario, rustPassResultsReferenceToCanvasScenario,];
+const scenarios = [jsUniverseJSText, rustPassResultsAsTextScenario, rustPassResultsReferenceTextInJavaScriptScenario, jsResultsToCanvasScenario, rustPassResultsReferenceToCanvasScenario,rustPassImageToCanvasScenario];
 
 const incrementScenario = () => {
   if (currentScenarioCounter >= 0) {

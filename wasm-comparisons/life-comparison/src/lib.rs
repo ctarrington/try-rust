@@ -37,6 +37,7 @@ pub struct Universe {
     current_index: usize,
     previous_index: usize,
     cells_list: [[Cell; CELL_COUNT]; 2],
+    image_bytes: [u8; CELL_COUNT * 4],
 }
 
 #[wasm_bindgen]
@@ -125,11 +126,29 @@ impl Universe {
             previous_index: 1,
             current_index: 0,
             cells_list: [cells, [Cell::Dead; CELL_COUNT]],
+            image_bytes: [0; CELL_COUNT * 4],
         }
     }
 
     pub fn render_as_text(&self) -> String {
         self.to_string()
+    }
+
+    pub fn render_to_image(&mut self) -> *const u8 {
+        for byte_index in 0..CELL_COUNT * 4 {
+            let cell_index = byte_index / 4 as usize;
+            let cell = self.cells_list[self.current_index][cell_index];
+            let red = if cell == Cell::Dead { 0 } else { 255 };
+
+            match byte_index % 4 {
+                3 => self.image_bytes[byte_index] = red,
+                2 => self.image_bytes[byte_index] = 0,
+                1 => self.image_bytes[byte_index] = 0,
+                0 => self.image_bytes[byte_index] = 255,
+                _ => {}
+            };
+        }
+        self.image_bytes.as_ptr()
     }
 
     pub fn width(&self) -> i32 {

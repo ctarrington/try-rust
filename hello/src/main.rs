@@ -101,6 +101,7 @@ fn test_person() {
     assert_eq!(55, joe.age);
 
     // typed destructuring ftw. ignore fields with the dot dot
+    // partial move
     let Person {
         name: mut joe_name, ..
     } = joe;
@@ -525,9 +526,9 @@ fn test_closures() {
         }
     }
 
-    let mut count = 0;
-    repeat(|| count += 1, 5);
-    assert_eq!(5, count);
+    let mut sum = 0;
+    repeat(|| sum += 1, 5);
+    assert_eq!(5, sum);
 
     struct NumberHolder {
         value: u32,

@@ -81,6 +81,20 @@ const rustPassImageToCanvasScenario = {
   movingAverage: createMovingAverage(1000),
 };
 
+const rustWriteResultsToCanvas = {
+  universe: Universe.new(),
+  render: () => {
+    canvas.style.display = '';
+    rustWriteResultsToCanvas.universe.render_to_canvas();
+    rustWriteResultsToCanvas.universe.tick();
+  },
+  clear: () => {
+    canvas.style.display = 'none';
+  },
+  name: 'Rust writes the canvas',
+  movingAverage: createMovingAverage(1000),
+};
+
 const jsUniverseJSText = {
   universe: createJSUniverse(width, height),
   render: () => {
@@ -112,7 +126,7 @@ const jsResultsToCanvasScenario = {
 };
 
 let currentScenarioCounter = -1;
-const scenarios = [jsUniverseJSText, rustPassResultsAsTextScenario, rustPassResultsReferenceTextInJavaScriptScenario, jsResultsToCanvasScenario, rustPassResultsReferenceToCanvasScenario,rustPassImageToCanvasScenario];
+const scenarios = [jsUniverseJSText, rustPassResultsAsTextScenario, rustPassResultsReferenceTextInJavaScriptScenario, jsResultsToCanvasScenario, rustPassResultsReferenceToCanvasScenario, rustWriteResultsToCanvas, rustPassImageToCanvasScenario];
 
 const incrementScenario = () => {
   if (currentScenarioCounter >= 0) {

@@ -4,6 +4,7 @@ use std::convert::TryInto;
 use std::fmt;
 
 use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsCast;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -38,6 +39,7 @@ pub struct Universe {
     previous_index: usize,
     cells_list: [[Cell; CELL_COUNT]; 2],
     image_bytes: [u8; CELL_COUNT * 4],
+    context: web_sys::CanvasRenderingContext2d,
 }
 
 #[wasm_bindgen]
@@ -122,11 +124,26 @@ impl Universe {
             }
         }
 
+        let document = web_sys::window().unwrap().document().unwrap();
+        let canvas: web_sys::Element = document.get_element_by_id("game-of-life-canvas").unwrap();
+        let canvas: web_sys::HtmlCanvasElement = canvas
+            .dyn_into::<web_sys::HtmlCanvasElement>()
+            .map_err(|_| ())
+            .unwrap();
+
+        let context = canvas
+            .get_context("2d")
+            .unwrap()
+            .unwrap()
+            .dyn_into::<web_sys::CanvasRenderingContext2d>()
+            .unwrap();
+
         Universe {
             previous_index: 1,
             current_index: 0,
             cells_list: [cells, [Cell::Dead; CELL_COUNT]],
             image_bytes: [0; CELL_COUNT * 4],
+            context,
         }
     }
 
@@ -149,6 +166,29 @@ impl Universe {
             };
         }
         self.image_bytes.as_ptr()
+    }
+
+    pub fn render_to_canvas(&self) {
+        const CELL_SIZE: i32 = 5;
+        for row in 0..HEIGHT {
+            for col in 0..WIDTH {
+                let cell = self.cells_list[self.current_index]
+                    [get_index(row.try_into().unwrap(), col.try_into().unwrap())];
+
+                let color = if cell == Cell::Dead {
+                    "#FFFFFF"
+                } else {
+                    "#CCCCCC"
+                };
+                self.context.set_fill_style(&JsValue::from_str(color));
+                self.context.fill_rect(
+                    (col * (CELL_SIZE + 1) + 1).into(),
+                    (row * (CELL_SIZE + 1) + 1).into(),
+                    CELL_SIZE.into(),
+                    CELL_SIZE.into(),
+                );
+            }
+        }
     }
 
     pub fn width(&self) -> i32 {

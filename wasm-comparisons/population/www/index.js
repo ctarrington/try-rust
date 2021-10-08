@@ -14,18 +14,30 @@ const rustMeanSpan = document.getElementById('rust-mean');
 const rustElapsedSpan = document.getElementById('rust-elapsed');
 const jsMeanSpan = document.getElementById('js-mean');
 const jsElapsedSpan = document.getElementById('js-elapsed');
+const countDiv = document.getElementById('count');
+const runButton = document.getElementById('run-button');
 
-const count = 1000*1000*50;
+let count = 1000*1000;
 
-const rustStart = performance.now();
-const rustMean = wasm.mean(count);
-const rustElapsed = performance.now() - rustStart;
+const tick = () => {
+  const rustStart = performance.now();
+  const rustMean = wasm.mean(count);
+  const rustElapsed = performance.now() - rustStart;
 
-const jsStart = performance.now();
-const jsMean = mean(count);
-const jsElapsed = performance.now() - jsStart;
+  const jsStart = performance.now();
+  const jsMean = mean(count);
+  const jsElapsed = performance.now() - jsStart;
 
-rustMeanSpan.textContent = rustMean.toFixed(5);
-rustElapsedSpan.textContent = rustElapsed.toFixed(5);
-jsMeanSpan.textContent = jsMean.toFixed(5);
-jsElapsedSpan.textContent = jsElapsed.toFixed(5);
+  rustMeanSpan.textContent = rustMean.toFixed(5);
+  rustElapsedSpan.textContent = rustElapsed.toFixed(2);
+  jsMeanSpan.textContent = jsMean.toFixed(5);
+  jsElapsedSpan.textContent = jsElapsed.toFixed(2);
+  countDiv.textContent = count.toLocaleString();
+
+  count += 1000*1000;
+
+};
+
+
+runButton.addEventListener('click', tick, false);
+tick();

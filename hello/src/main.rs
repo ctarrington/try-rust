@@ -411,10 +411,9 @@ fn test_traits() {
         fn consume(&self) -> u32;
     }
 
-    #[derive(Copy, Clone)]
     enum Fudge {
-        Strawberry = 100,
-        Walnut = 120,
+        Strawberry { quantity: u32 },
+        Walnut { quantity: u32 },
     }
 
     struct Meat {
@@ -423,7 +422,12 @@ fn test_traits() {
 
     impl Consumable for Fudge {
         fn consume(&self) -> u32 {
-            *self as u32
+            let calories = match self {
+                Fudge::Strawberry { quantity } => 100 * quantity,
+                Fudge::Walnut { quantity } => 120 * quantity,
+            };
+
+            calories
         }
     }
 
@@ -436,9 +440,9 @@ fn test_traits() {
     // runtime polymorphism with a vtable
     // dyn is essential for heterogeneous collections
     let consumables: Vec<Box<dyn Consumable>> = vec![
-        Box::new(Fudge::Strawberry),
+        Box::new(Fudge::Strawberry { quantity: 2 }),
         Box::new(Meat { quantity: 2 }),
-        Box::new(Fudge::Walnut),
+        Box::new(Fudge::Walnut { quantity: 2 }),
     ];
 
     let mut total: u32 = 0;
@@ -446,19 +450,19 @@ fn test_traits() {
         total += consumable.consume();
     }
 
-    assert_eq!(420, total);
-    assert_eq!(100, Fudge::Strawberry.consume());
+    assert_eq!(640, total);
+    assert_eq!(100, Fudge::Strawberry { quantity: 1 }.consume());
 
     let sum = consumables
         .iter()
         .fold(0, |acc, consumable| acc + consumable.consume());
-    assert_eq!(420, sum);
+    assert_eq!(640, sum);
 
     // generic function gets compiled for each type that is used
     fn calculate_calories<T: Consumable>(consumable: T) -> u32 {
         consumable.consume()
     }
-    assert_eq!(120, calculate_calories(Fudge::Walnut));
+    assert_eq!(120, calculate_calories(Fudge::Walnut { quantity: 1 }));
     assert_eq!(200, calculate_calories(Meat { quantity: 2 }));
 }
 

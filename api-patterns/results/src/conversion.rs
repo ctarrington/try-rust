@@ -1,7 +1,7 @@
 // mess around with an external api that needs to be converted to internal errors
 // backend errors to front end responses
 
-#[derive(Debug)]
+#[derive(Ord, PartialOrd, Eq, PartialEq, Debug)]
 pub enum Flavor {
     Vanilla,
     Chocolate,
@@ -19,11 +19,22 @@ pub enum Payment {
     Card(bool),
 }
 
-pub struct SimpleKitchen {}
+pub struct SimpleKitchen {
+    ingredients: Vec<Flavor>,
+}
 
 impl SimpleKitchen {
-    fn prepare(thing: Thing) -> Result<(), &'static str> {
-        Ok(())
+    fn new() -> Self {
+        Self {
+            ingredients: vec![Flavor::Vanilla, Flavor::Chocolate],
+        }
+    }
+
+    fn prepare(&self, thing: Thing) -> Result<(), &'static str> {
+        match thing.flavor {
+            Some(flavor) if self.ingredients.contains(&flavor) => Ok(()),
+            _ => Err("Sorry we don't have that"),
+        }
     }
 }
 
@@ -37,12 +48,19 @@ impl<'a> Cashier<'a> {
     }
 
     pub fn buy(&self, thing: Thing, payment: Payment) -> Result<u32, &'static str> {
-        match payment {
+        let payment_result = match payment {
             Payment::Card(true) => Ok(0),
             Payment::Card(false) => Err("Card declined"),
 
             Payment::Cash(value) if value >= thing.size => Ok(value - thing.size),
             Payment::Cash(_) => Err("Not enough cash"),
+        };
+
+        let kitchen_result = self.kitchen.prepare(thing);
+
+        match kitchen_result {
+            Ok(_) => payment_result,
+            Err(value) => Err(value),
         }
     }
 }
@@ -64,7 +82,7 @@ mod tests {
 
     #[test]
     fn happy_path() {
-        let kitchen = SimpleKitchen {};
+        let kitchen = SimpleKitchen::new();
         let cashier: Cashier = Cashier::new(&kitchen);
 
         let thing = Thing {

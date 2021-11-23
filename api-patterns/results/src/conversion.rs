@@ -5,6 +5,7 @@
 pub enum Flavor {
     Vanilla,
     Chocolate,
+    Pistachio,
 }
 
 #[derive(Debug)]
@@ -19,6 +20,10 @@ pub enum Payment {
     Card(bool),
 }
 
+pub trait Kitchen {
+    fn prepare(&self, thing: Thing) -> Result<(), &'static str>;
+}
+
 pub struct SimpleKitchen {
     ingredients: Vec<Flavor>,
 }
@@ -29,7 +34,9 @@ impl SimpleKitchen {
             ingredients: vec![Flavor::Vanilla, Flavor::Chocolate],
         }
     }
+}
 
+impl Kitchen for SimpleKitchen {
     fn prepare(&self, thing: Thing) -> Result<(), &'static str> {
         match thing.flavor {
             Some(flavor) if self.ingredients.contains(&flavor) => Ok(()),
@@ -38,13 +45,27 @@ impl SimpleKitchen {
     }
 }
 
+pub struct FancyKitchen {}
+
+impl FancyKitchen {
+    fn new() -> Self {
+        Self {}
+    }
+}
+
+impl Kitchen for FancyKitchen {
+    fn prepare(&self, _thing: Thing) -> Result<(), &'static str> {
+        Ok(())
+    }
+}
+
 pub struct Cashier<'a> {
-    kitchen: &'a SimpleKitchen,
+    kitchen: &'a dyn Kitchen,
 }
 
 impl<'a> Cashier<'a> {
-    pub fn new(kitchen: &'a SimpleKitchen) -> Self {
-        Self { kitchen: kitchen }
+    pub fn new(kitchen: &'a Kitchen) -> Self {
+        Self { kitchen }
     }
 
     pub fn buy(&self, thing: Thing, payment: Payment) -> Result<u32, &'static str> {
@@ -67,7 +88,7 @@ impl<'a> Cashier<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::conversion::{Cashier, Flavor, Payment, SimpleKitchen, Thing};
+    use crate::conversion::{Cashier, FancyKitchen, Flavor, Payment, SimpleKitchen, Thing};
 
     #[test]
     fn simple() {
@@ -81,16 +102,41 @@ mod tests {
     }
 
     #[test]
-    fn happy_path() {
+    fn simple_path() {
         let kitchen = SimpleKitchen::new();
         let cashier: Cashier = Cashier::new(&kitchen);
 
-        let thing = Thing {
-            size: 22,
-            flavor: Some(Flavor::Vanilla),
-        };
-
-        let response = cashier.buy(thing, Payment::Cash(100u32));
+        let response = cashier.buy(
+            Thing {
+                size: 22,
+                flavor: Some(Flavor::Vanilla),
+            },
+            Payment::Cash(100u32),
+        );
         assert!(matches!(response, Ok(78)));
+
+        let response = cashier.buy(
+            Thing {
+                size: 22,
+                flavor: Some(Flavor::Pistachio),
+            },
+            Payment::Cash(100u32),
+        );
+        assert!(matches!(response, Err("Sorry we don't have that")));
+    }
+
+    #[test]
+    fn fancy_path() {
+        let kitchen = FancyKitchen::new();
+        let cashier: Cashier = Cashier::new(&kitchen);
+
+        let response = cashier.buy(
+            Thing {
+                size: 40,
+                flavor: Some(Flavor::Pistachio),
+            },
+            Payment::Cash(100u32),
+        );
+        assert!(matches!(response, Ok(60)));
     }
 }

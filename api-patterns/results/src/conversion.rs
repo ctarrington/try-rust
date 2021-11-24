@@ -21,7 +21,7 @@ pub enum Payment {
 }
 
 pub trait Kitchen {
-    fn prepare(&self, thing: Thing) -> Result<(), &'static str>;
+    fn prepare(&self, thing: &Thing) -> Result<(), &'static str>;
 }
 
 pub struct SimpleKitchen {
@@ -29,6 +29,7 @@ pub struct SimpleKitchen {
 }
 
 impl SimpleKitchen {
+    #[allow(dead_code)]
     fn new() -> Self {
         Self {
             ingredients: vec![Flavor::Vanilla, Flavor::Chocolate],
@@ -37,8 +38,8 @@ impl SimpleKitchen {
 }
 
 impl Kitchen for SimpleKitchen {
-    fn prepare(&self, thing: Thing) -> Result<(), &'static str> {
-        match thing.flavor {
+    fn prepare(&self, thing: &Thing) -> Result<(), &'static str> {
+        match &thing.flavor {
             Some(flavor) if self.ingredients.contains(&flavor) => Ok(()),
             _ => Err("Sorry we don't have that"),
         }
@@ -48,13 +49,14 @@ impl Kitchen for SimpleKitchen {
 pub struct FancyKitchen {}
 
 impl FancyKitchen {
+    #[allow(dead_code)]
     fn new() -> Self {
         Self {}
     }
 }
 
 impl Kitchen for FancyKitchen {
-    fn prepare(&self, _thing: Thing) -> Result<(), &'static str> {
+    fn prepare(&self, _thing: &Thing) -> Result<(), &'static str> {
         Ok(())
     }
 }
@@ -64,24 +66,41 @@ pub struct Cashier<'a> {
 }
 
 impl<'a> Cashier<'a> {
-    pub fn new(kitchen: &'a Kitchen) -> Self {
+    pub fn new(kitchen: &'a dyn Kitchen) -> Self {
         Self { kitchen }
     }
 
     pub fn buy(&self, thing: Thing, payment: Payment) -> Result<u32, &'static str> {
-        let payment_result = match payment {
+        Self::validate_order(&thing)?;
+        self.kitchen.prepare(&thing)?;
+        Self::process_payment(&thing, &payment)
+    }
+
+    fn validate_order(thing: &Thing) -> Result<(), &'static str> {
+        match thing {
+            Thing {
+                flavor: None,
+                size: 0,
+            } => Err("You need to tell me what size and flavor you want!"),
+
+            Thing { flavor: _, size: 0 } => Err("You need to tell me what size you want!"),
+
+            Thing {
+                flavor: None,
+                size: _,
+            } => Err("You need to tell me what flavor you want!"),
+
+            _ => Ok(()),
+        }
+    }
+
+    fn process_payment(thing: &Thing, payment: &Payment) -> Result<u32, &'static str> {
+        match payment {
             Payment::Card(true) => Ok(0),
             Payment::Card(false) => Err("Card declined"),
 
-            Payment::Cash(value) if value >= thing.size => Ok(value - thing.size),
+            Payment::Cash(value) if value >= &thing.size => Ok(value - thing.size),
             Payment::Cash(_) => Err("Not enough cash"),
-        };
-
-        let kitchen_result = self.kitchen.prepare(thing);
-
-        match kitchen_result {
-            Ok(_) => payment_result,
-            Err(value) => Err(value),
         }
     }
 }
@@ -89,17 +108,6 @@ impl<'a> Cashier<'a> {
 #[cfg(test)]
 mod tests {
     use crate::conversion::{Cashier, FancyKitchen, Flavor, Payment, SimpleKitchen, Thing};
-
-    #[test]
-    fn simple() {
-        let thing = Thing {
-            size: 22,
-            flavor: Some(Flavor::Chocolate),
-        };
-
-        assert_eq!(thing.size, 22);
-        assert!(matches!(thing.flavor, Some(Flavor::Chocolate)));
-    }
 
     #[test]
     fn simple_path() {
@@ -123,6 +131,42 @@ mod tests {
             Payment::Cash(100u32),
         );
         assert!(matches!(response, Err("Sorry we don't have that")));
+
+        let response = cashier.buy(
+            Thing {
+                size: 22,
+                flavor: None,
+            },
+            Payment::Cash(100u32),
+        );
+        assert!(matches!(
+            response,
+            Err("You need to tell me what flavor you want!")
+        ));
+
+        let response = cashier.buy(
+            Thing {
+                size: 0,
+                flavor: Some(Flavor::Vanilla),
+            },
+            Payment::Cash(100u32),
+        );
+        assert!(matches!(
+            response,
+            Err("You need to tell me what size you want!")
+        ));
+
+        let response = cashier.buy(
+            Thing {
+                size: 0,
+                flavor: None,
+            },
+            Payment::Cash(100u32),
+        );
+        assert!(matches!(
+            response,
+            Err("You need to tell me what size and flavor you want!")
+        ));
     }
 
     #[test]

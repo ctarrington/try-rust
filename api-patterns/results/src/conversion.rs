@@ -20,8 +20,16 @@ pub enum Payment {
     Card(bool),
 }
 
+#[derive(Clone, Copy)]
+pub enum KitchenError {
+    InsufficientIngredients,
+    Busy,
+    Closed,
+    OnFire,
+}
+
 pub trait Kitchen {
-    fn prepare(&self, thing: &Thing) -> Result<(), &'static str>;
+    fn prepare(&self, thing: &Thing) -> Result<(), KitchenError>;
 }
 
 pub struct SimpleKitchen {
@@ -38,10 +46,10 @@ impl SimpleKitchen {
 }
 
 impl Kitchen for SimpleKitchen {
-    fn prepare(&self, thing: &Thing) -> Result<(), &'static str> {
+    fn prepare(&self, thing: &Thing) -> Result<(), KitchenError> {
         match &thing.flavor {
             Some(flavor) if self.ingredients.contains(&flavor) => Ok(()),
-            _ => Err("Sorry we don't have that"),
+            _ => Err(KitchenError::InsufficientIngredients),
         }
     }
 }
@@ -56,8 +64,37 @@ impl FancyKitchen {
 }
 
 impl Kitchen for FancyKitchen {
-    fn prepare(&self, _thing: &Thing) -> Result<(), &'static str> {
+    fn prepare(&self, _thing: &Thing) -> Result<(), KitchenError> {
         Ok(())
+    }
+}
+
+pub enum FriendlyError {
+    SorryCannotPrepare,
+    SorryComeBackSoon,
+    NeedFlavorDecision,
+    NeedSizeDecision,
+    NeedSizeAndFlavorDecision,
+    NeedMoreCash,
+    NeedDifferentPayment,
+}
+
+impl From<KitchenError> for FriendlyError {
+    fn from(err: KitchenError) -> FriendlyError {
+        match err {
+            KitchenError::InsufficientIngredients => FriendlyError::SorryCannotPrepare,
+            _ => FriendlyError::SorryComeBackSoon,
+        }
+    }
+}
+
+impl From<&str> for FriendlyError {
+    fn from(err: &str) -> FriendlyError {
+        if err.contains("cash") {
+            FriendlyError::NeedMoreCash
+        } else {
+            FriendlyError::NeedDifferentPayment
+        }
     }
 }
 
@@ -70,30 +107,33 @@ impl<'a> Cashier<'a> {
         Self { kitchen }
     }
 
-    pub fn buy(&self, thing: &Thing, payment: &Payment) -> Result<u32, &'static str> {
+    pub fn buy(&self, thing: &Thing, payment: &Payment) -> Result<u32, FriendlyError> {
         Self::validate_order(thing)?;
         self.kitchen.prepare(thing)?;
-        Self::process_payment(thing, payment)
+        let change = Self::process_payment(thing, payment)?;
+        Ok(change)
     }
 
-    fn validate_order(thing: &Thing) -> Result<(), &'static str> {
+    fn validate_order(thing: &Thing) -> Result<(), FriendlyError> {
         match thing {
             Thing {
                 flavor: None,
                 size: 0,
-            } => Err("You need to tell me what size and flavor you want!"),
+            } => Err(FriendlyError::NeedSizeAndFlavorDecision),
 
-            Thing { flavor: _, size: 0 } => Err("You need to tell me what size you want!"),
+            Thing { flavor: _, size: 0 } => Err(FriendlyError::NeedSizeDecision),
 
             Thing {
                 flavor: None,
                 size: _,
-            } => Err("You need to tell me what flavor you want!"),
+            } => Err(FriendlyError::NeedFlavorDecision),
 
             _ => Ok(()),
         }
     }
 
+    // intentionally bad design in using string error messages
+    // so the poor from method can clean it up...
     fn process_payment(thing: &Thing, payment: &Payment) -> Result<u32, &'static str> {
         match payment {
             Payment::Card(true) => Ok(0),
@@ -107,7 +147,10 @@ impl<'a> Cashier<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::conversion::{Cashier, FancyKitchen, Flavor, Payment, SimpleKitchen, Thing};
+    use crate::conversion::{
+        Cashier, FancyKitchen, Flavor, FriendlyError::*, Kitchen, KitchenError, Payment,
+        SimpleKitchen, Thing,
+    };
 
     #[test]
     fn simple_path() {
@@ -130,7 +173,25 @@ mod tests {
             },
             &Payment::Cash(20u32),
         );
-        assert!(matches!(response, Err("Not enough cash")));
+        assert!(matches!(response, Err(NeedMoreCash)));
+
+        let response = cashier.buy(
+            &Thing {
+                size: 22,
+                flavor: Some(Flavor::Vanilla),
+            },
+            &Payment::Card(true),
+        );
+        assert!(matches!(response, Ok(0)));
+
+        let response = cashier.buy(
+            &Thing {
+                size: 22,
+                flavor: Some(Flavor::Vanilla),
+            },
+            &Payment::Card(false),
+        );
+        assert!(matches!(response, Err(NeedDifferentPayment)));
 
         let response = cashier.buy(
             &Thing {
@@ -139,7 +200,7 @@ mod tests {
             },
             &Payment::Cash(100u32),
         );
-        assert!(matches!(response, Err("Sorry we don't have that")));
+        assert!(matches!(response, Err(SorryCannotPrepare)));
 
         let response = cashier.buy(
             &Thing {
@@ -148,10 +209,7 @@ mod tests {
             },
             &Payment::Cash(100u32),
         );
-        assert!(matches!(
-            response,
-            Err("You need to tell me what flavor you want!")
-        ));
+        assert!(matches!(response, Err(NeedFlavorDecision)));
 
         let response = cashier.buy(
             &Thing {
@@ -160,10 +218,7 @@ mod tests {
             },
             &Payment::Cash(100u32),
         );
-        assert!(matches!(
-            response,
-            Err("You need to tell me what size you want!")
-        ));
+        assert!(matches!(response, Err(NeedSizeDecision)));
 
         let response = cashier.buy(
             &Thing {
@@ -172,10 +227,7 @@ mod tests {
             },
             &Payment::Cash(100u32),
         );
-        assert!(matches!(
-            response,
-            Err("You need to tell me what size and flavor you want!")
-        ));
+        assert!(matches!(response, Err(NeedSizeAndFlavorDecision)));
     }
 
     #[test]
@@ -191,5 +243,32 @@ mod tests {
             &Payment::Cash(100u32),
         );
         assert!(matches!(response, Ok(60)));
+    }
+
+    #[test]
+    fn bad_kitchens() {
+        struct MockKitchen {
+            error: KitchenError,
+        }
+
+        impl Kitchen for MockKitchen {
+            fn prepare(&self, _thing: &Thing) -> Result<(), KitchenError> {
+                Err(self.error)
+            }
+        }
+
+        let kitchen = MockKitchen {
+            error: KitchenError::OnFire,
+        };
+        let cashier: Cashier = Cashier::new(&kitchen);
+
+        let response = cashier.buy(
+            &Thing {
+                size: 40,
+                flavor: Some(Flavor::Vanilla),
+            },
+            &Payment::Cash(100u32),
+        );
+        assert!(matches!(response, Err(SorryComeBackSoon)));
     }
 }

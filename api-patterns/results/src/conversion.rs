@@ -70,10 +70,10 @@ impl<'a> Cashier<'a> {
         Self { kitchen }
     }
 
-    pub fn buy(&self, thing: Thing, payment: Payment) -> Result<u32, &'static str> {
-        Self::validate_order(&thing)?;
-        self.kitchen.prepare(&thing)?;
-        Self::process_payment(&thing, &payment)
+    pub fn buy(&self, thing: &Thing, payment: &Payment) -> Result<u32, &'static str> {
+        Self::validate_order(thing)?;
+        self.kitchen.prepare(thing)?;
+        Self::process_payment(thing, payment)
     }
 
     fn validate_order(thing: &Thing) -> Result<(), &'static str> {
@@ -115,29 +115,38 @@ mod tests {
         let cashier: Cashier = Cashier::new(&kitchen);
 
         let response = cashier.buy(
-            Thing {
+            &Thing {
                 size: 22,
                 flavor: Some(Flavor::Vanilla),
             },
-            Payment::Cash(100u32),
+            &Payment::Cash(100u32),
         );
         assert!(matches!(response, Ok(78)));
 
         let response = cashier.buy(
-            Thing {
+            &Thing {
+                size: 22,
+                flavor: Some(Flavor::Vanilla),
+            },
+            &Payment::Cash(20u32),
+        );
+        assert!(matches!(response, Err("Not enough cash")));
+
+        let response = cashier.buy(
+            &Thing {
                 size: 22,
                 flavor: Some(Flavor::Pistachio),
             },
-            Payment::Cash(100u32),
+            &Payment::Cash(100u32),
         );
         assert!(matches!(response, Err("Sorry we don't have that")));
 
         let response = cashier.buy(
-            Thing {
+            &Thing {
                 size: 22,
                 flavor: None,
             },
-            Payment::Cash(100u32),
+            &Payment::Cash(100u32),
         );
         assert!(matches!(
             response,
@@ -145,11 +154,11 @@ mod tests {
         ));
 
         let response = cashier.buy(
-            Thing {
+            &Thing {
                 size: 0,
                 flavor: Some(Flavor::Vanilla),
             },
-            Payment::Cash(100u32),
+            &Payment::Cash(100u32),
         );
         assert!(matches!(
             response,
@@ -157,11 +166,11 @@ mod tests {
         ));
 
         let response = cashier.buy(
-            Thing {
+            &Thing {
                 size: 0,
                 flavor: None,
             },
-            Payment::Cash(100u32),
+            &Payment::Cash(100u32),
         );
         assert!(matches!(
             response,
@@ -175,11 +184,11 @@ mod tests {
         let cashier: Cashier = Cashier::new(&kitchen);
 
         let response = cashier.buy(
-            Thing {
+            &Thing {
                 size: 40,
                 flavor: Some(Flavor::Pistachio),
             },
-            Payment::Cash(100u32),
+            &Payment::Cash(100u32),
         );
         assert!(matches!(response, Ok(60)));
     }

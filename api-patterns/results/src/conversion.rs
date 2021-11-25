@@ -46,8 +46,8 @@ impl SimpleKitchen {
 }
 
 impl Kitchen for SimpleKitchen {
-    fn prepare(&self, thing: &Thing) -> Result<(), KitchenError> {
-        match &thing.flavor {
+    fn prepare(&self, Thing { size: _, flavor }: &Thing) -> Result<(), KitchenError> {
+        match flavor {
             Some(flavor) if self.ingredients.contains(&flavor) => Ok(()),
             _ => Err(KitchenError::InsufficientIngredients),
         }

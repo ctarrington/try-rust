@@ -1,4 +1,3 @@
-use rand::distributions::uniform::Uniform;
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -26,9 +25,7 @@ fn create_random_contact(id: &str) -> Contact {
         .collect();
 
     let mut rng = rand::thread_rng();
-    let uniform_indexes = Uniform::from(0..names.len());
-    let index = uniform_indexes.sample(&mut rng);
-    let name = names.get(index).unwrap().to_string();
+    let name = names.choose(&mut rng).unwrap().to_string();
 
     let address = Address {
         street1: "123 Main Street".to_string(),

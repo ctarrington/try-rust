@@ -17,34 +17,82 @@ struct Contact {
     address: Address,
 }
 
-// todo: wrap up in an iterator
-fn create_random_contact(id: &str) -> Contact {
-    let names: Vec<String> = ["Ted", "Fred", "Barney", "Betty", "Wilma"]
-        .iter()
-        .map(|&s| s.into())
-        .collect();
+struct RandomStringIterator {
+    values: Vec<String>,
+    rng: ThreadRng,
+}
 
-    let mut rng = rand::thread_rng();
-    let name = names.choose(&mut rng).unwrap().to_string();
+impl RandomStringIterator {
+    fn new(values: Vec<String>) -> Self {
+        Self {
+            values,
+            rng: rand::thread_rng(),
+        }
+    }
+}
 
-    let address = Address {
-        street1: "123 Main Street".to_string(),
-        street2: "".to_string(),
-        city: "nowhere".to_string(),
-        state: "md".to_string(),
-        zip: "21228".to_string(),
-    };
+impl Iterator for RandomStringIterator {
+    type Item = String;
 
-    Contact {
-        id: id.to_string(),
-        name,
-        address,
+    fn next(&mut self) -> Option<Self::Item> {
+        self.values
+            .choose(&mut self.rng)
+            .map(|value| value.to_string())
+    }
+}
+
+struct RandomContactIterator {
+    stop_id: u32,
+    current_id: u32,
+    name_iterator: RandomStringIterator,
+}
+
+impl RandomContactIterator {
+    fn new(start_id: u32, stop_id: u32) -> Self {
+        let names: Vec<String> = ["Ted", "Fred", "Barney", "Betty", "Wilma"]
+            .iter()
+            .map(|&s| s.into())
+            .collect();
+
+        Self {
+            stop_id,
+            current_id: start_id,
+            name_iterator: RandomStringIterator::new(names),
+        }
+    }
+}
+
+impl Iterator for RandomContactIterator {
+    type Item = Contact;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let name = self.name_iterator.next().unwrap();
+        let address = Address {
+            street1: "123 Main Street".to_string(),
+            street2: "".to_string(),
+            city: "nowhere".to_string(),
+            state: "md".to_string(),
+            zip: "21228".to_string(),
+        };
+
+        let contact = Some(Contact {
+            id: self.current_id.to_string(),
+            name,
+            address,
+        });
+
+        if self.current_id > self.stop_id {
+            return None;
+        }
+        self.current_id += 1;
+
+        contact
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{create_random_contact, Contact};
+    use crate::{Contact, RandomContactIterator};
     use serde_json::{Result, Value};
 
     fn get_raw() -> &'static str {
@@ -83,8 +131,21 @@ mod tests {
 
     #[test]
     fn create_contact_json() {
-        let contact = create_random_contact("123");
+        let mut contact_iterator = RandomContactIterator::new(0, 2);
+        let contact = contact_iterator.next();
+        assert!(contact.is_some());
+        assert_eq!(contact.unwrap().id, "0");
+
+        let contact = contact_iterator.next();
+        assert!(contact.is_some());
+        assert_eq!(contact.unwrap().id, "1");
+
+        let contact = contact_iterator.next();
+        assert!(contact.is_some());
         println!("contact {:?}", contact);
-        assert_eq!(contact.id, "123");
+        assert_eq!(contact.unwrap().id, "2");
+
+        let contact = contact_iterator.next();
+        assert!(contact.is_none());
     }
 }

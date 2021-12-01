@@ -2,7 +2,7 @@ use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
-struct Address {
+pub struct Address {
     street1: String,
     street2: String,
     city: String,
@@ -11,7 +11,7 @@ struct Address {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-struct Contact {
+pub struct Contact {
     id: String,
     name: String,
     address: Address,
@@ -41,7 +41,7 @@ impl Iterator for RandomStringIterator {
     }
 }
 
-struct RandomContactIterator {
+pub struct RandomContactIterator {
     stop_id: u32,
     current_id: u32,
     name_iterator: RandomStringIterator,
@@ -54,7 +54,7 @@ fn list_to_vector(values: &[&str]) -> Vec<String> {
 }
 
 impl RandomContactIterator {
-    fn new(start_id: u32, stop_id: u32) -> Self {
+    pub fn new(start_id: u32, stop_id: u32) -> Self {
         let names: Vec<String> = list_to_vector(&["Ted", "Fred", "Barney", "Betty", "Wilma"]);
         let street_numbers: Vec<String> = list_to_vector(&["123", "1", "431", "3131", "111"]);
         let street_names: Vec<String> =

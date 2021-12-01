@@ -45,19 +45,27 @@ struct RandomContactIterator {
     stop_id: u32,
     current_id: u32,
     name_iterator: RandomStringIterator,
+    street_number_iterator: RandomStringIterator,
+    street_name_iterator: RandomStringIterator,
+}
+
+fn list_to_vector(values: &[&str]) -> Vec<String> {
+    values.iter().map(|&s| s.into()).collect()
 }
 
 impl RandomContactIterator {
     fn new(start_id: u32, stop_id: u32) -> Self {
-        let names: Vec<String> = ["Ted", "Fred", "Barney", "Betty", "Wilma"]
-            .iter()
-            .map(|&s| s.into())
-            .collect();
+        let names: Vec<String> = list_to_vector(&["Ted", "Fred", "Barney", "Betty", "Wilma"]);
+        let street_numbers: Vec<String> = list_to_vector(&["123", "1", "431", "3131", "111"]);
+        let street_names: Vec<String> =
+            list_to_vector(&["Main Street", "Water Street", "Winding Blvd", "Saddle Ct"]);
 
         Self {
             stop_id,
             current_id: start_id,
             name_iterator: RandomStringIterator::new(names),
+            street_number_iterator: RandomStringIterator::new(street_numbers),
+            street_name_iterator: RandomStringIterator::new(street_names),
         }
     }
 }
@@ -67,11 +75,14 @@ impl Iterator for RandomContactIterator {
 
     fn next(&mut self) -> Option<Self::Item> {
         let name = self.name_iterator.next().unwrap();
+        let street_number = self.street_number_iterator.next().unwrap();
+        let street_name = self.street_name_iterator.next().unwrap();
+
         let address = Address {
-            street1: "123 Main Street".to_string(),
+            street1: street_number + " " + &street_name,
             street2: "".to_string(),
-            city: "nowhere".to_string(),
-            state: "md".to_string(),
+            city: "Nowhere".to_string(),
+            state: "MD".to_string(),
             zip: "21228".to_string(),
         };
 

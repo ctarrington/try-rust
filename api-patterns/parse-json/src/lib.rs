@@ -1,5 +1,8 @@
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::fs;
+
+const CONTACT_FILE_PATH: &str = "./output/contacts/contact";
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Address {
@@ -68,6 +71,27 @@ impl RandomContactIterator {
             street_name_iterator: RandomStringIterator::new(street_names),
         }
     }
+}
+
+fn file_path(id: u32) -> String {
+    format!("{}{}.out", CONTACT_FILE_PATH, id)
+}
+
+pub fn write_contact(contact: Contact) -> Result<(), std::io::Error> {
+    let serialized_contact = serde_json::to_string(&contact)?;
+
+    let id = contact.id.parse::<u32>().unwrap();
+    fs::write(file_path(id), serialized_contact)
+        .expect(&format!("Unable to write {}", file_path(id)));
+
+    Ok(())
+}
+
+pub fn read_contact(id: u32) -> Result<Contact, std::io::Error> {
+    let raw_contact =
+        fs::read_to_string(file_path(id)).expect(&format!("Unable to read {}", file_path(id)));
+    let contact: Contact = serde_json::from_str(&raw_contact)?;
+    Ok(contact)
 }
 
 impl Iterator for RandomContactIterator {

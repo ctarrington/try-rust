@@ -15,7 +15,7 @@ pub struct Address {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Contact {
-    id: String,
+    id: u32,
     name: String,
     address: Address,
 }
@@ -80,9 +80,8 @@ fn file_path(id: u32) -> String {
 pub fn write_contact(contact: Contact) -> Result<(), std::io::Error> {
     let serialized_contact = serde_json::to_string(&contact)?;
 
-    let id = contact.id.parse::<u32>().unwrap();
-    fs::write(file_path(id), serialized_contact)
-        .expect(&format!("Unable to write {}", file_path(id)));
+    fs::write(file_path(contact.id), serialized_contact)
+        .expect(&format!("Unable to write {}", file_path(contact.id)));
 
     Ok(())
 }
@@ -111,7 +110,7 @@ impl Iterator for RandomContactIterator {
         };
 
         let contact = Some(Contact {
-            id: self.current_id.to_string(),
+            id: self.current_id,
             name,
             address,
         });
@@ -127,12 +126,12 @@ impl Iterator for RandomContactIterator {
 
 #[cfg(test)]
 mod tests {
-    use crate::{Contact, RandomContactIterator};
-    use serde_json::{Result, Value};
+    use crate::{read_contact, write_contact, Contact, RandomContactIterator};
+    use serde_json::Value;
 
     fn get_raw() -> &'static str {
         r#"
-            {"id": "123",
+            {"id": 123,
             "name": "Fred",
             "address": {
                 "street1": "123 Main Street",
@@ -147,7 +146,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_as_value() -> Result<()> {
+    fn parse_as_value() -> serde_json::Result<()> {
         let raw = get_raw();
         let parsed_value: Value = serde_json::from_str(raw)?;
         assert_eq!(parsed_value["name"], "Fred");
@@ -156,7 +155,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_as_object() -> Result<()> {
+    fn parse_as_object() -> serde_json::Result<()> {
         let raw = get_raw();
         let fred: Contact = serde_json::from_str(raw)?;
         assert_eq!(fred.name, "Fred");
@@ -169,18 +168,31 @@ mod tests {
         let mut contact_iterator = RandomContactIterator::new(0, 2);
         let contact = contact_iterator.next();
         assert!(contact.is_some());
-        assert_eq!(contact.unwrap().id, "0");
+        assert_eq!(contact.unwrap().id, 0);
 
         let contact = contact_iterator.next();
         assert!(contact.is_some());
-        assert_eq!(contact.unwrap().id, "1");
+        assert_eq!(contact.unwrap().id, 1);
 
         let contact = contact_iterator.next();
         assert!(contact.is_some());
         println!("contact {:?}", contact);
-        assert_eq!(contact.unwrap().id, "2");
+        assert_eq!(contact.unwrap().id, 2);
 
         let contact = contact_iterator.next();
         assert!(contact.is_none());
+    }
+
+    #[test]
+    fn read_and_write_contact() -> Result<(), std::io::Error> {
+        let raw = get_raw();
+        let fred: Contact = serde_json::from_str(raw)?;
+
+        write_contact(fred)?;
+        let recovered_fred = read_contact(123)?;
+        assert_eq!(recovered_fred.name, "Fred");
+        assert_eq!(recovered_fred.address.city, "Smalltown");
+
+        Ok(())
     }
 }

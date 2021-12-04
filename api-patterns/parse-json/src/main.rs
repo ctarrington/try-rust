@@ -1,4 +1,6 @@
-use parse_json::{read_contact, write_contact, Contact, RandomContactIterator};
+use parse_json::{
+    create_and_write_contacts, read_contact, write_contact, Contact, RandomContactIterator,
+};
 
 fn main() -> Result<(), std::io::Error> {
     let mut contact_iterator = RandomContactIterator::new(0, 3);
@@ -13,6 +15,8 @@ fn main() -> Result<(), std::io::Error> {
 
     let read_contact = read_contact(0u32);
     println!("read_contact {:?}", read_contact);
+
+    create_and_write_contacts(55u32, 60u32)?;
 
     Ok(())
 }

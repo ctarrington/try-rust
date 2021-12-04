@@ -92,6 +92,31 @@ pub fn read_contact(id: u32) -> Result<Contact, std::io::Error> {
     let contact: Contact = serde_json::from_str(&raw_contact)?;
     Ok(contact)
 }
+/// create a contact for each id in the range, inclusive. Returns Ok or the first encountered error.
+pub fn create_and_write_contacts(start_id: u32, stop_id: u32) -> Result<(), std::io::Error> {
+    let mut contact_iterator = RandomContactIterator::new(start_id, stop_id);
+
+    while let Some(contact) = contact_iterator.next() {
+        write_contact(contact)?;
+    }
+    Ok(())
+}
+
+pub fn read_contacts(start_id: u32, stop_id: u32) -> Result<Vec<Contact>, std::io::Error> {
+    let mut index = start_id;
+    let mut contacts = Vec::new();
+
+    while let Ok(contact) = read_contact(index) {
+        println!("contact {:?}", contact);
+        contacts.push(contact);
+        index += 1;
+        if index > stop_id {
+            break;
+        }
+    }
+
+    Ok(contacts)
+}
 
 impl Iterator for RandomContactIterator {
     type Item = Contact;
@@ -126,7 +151,10 @@ impl Iterator for RandomContactIterator {
 
 #[cfg(test)]
 mod tests {
-    use crate::{read_contact, write_contact, Contact, RandomContactIterator};
+    use crate::{
+        create_and_write_contacts, read_contact, read_contacts, write_contact, Contact,
+        RandomContactIterator,
+    };
     use serde_json::Value;
 
     fn get_raw() -> &'static str {
@@ -192,6 +220,17 @@ mod tests {
         let recovered_fred = read_contact(123)?;
         assert_eq!(recovered_fred.name, "Fred");
         assert_eq!(recovered_fred.address.city, "Smalltown");
+
+        Ok(())
+    }
+
+    #[test]
+    fn bulk_write_bulk_read() -> Result<(), std::io::Error> {
+        create_and_write_contacts(100u32, 102u32)?;
+        let contacts = read_contacts(100u32, 102u32)?;
+
+        assert_eq!(contacts.len(), 3);
+        assert_eq!(contacts.get(0).unwrap().id, 100);
 
         Ok(())
     }

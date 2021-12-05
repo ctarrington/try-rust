@@ -1,6 +1,9 @@
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::cmp;
 use std::fs;
+use std::thread;
+use std::thread::JoinHandle;
 
 const CONTACT_FILE_PATH: &str = "./output/contacts/contact";
 
@@ -102,6 +105,40 @@ pub fn create_and_write_contacts(start_id: u32, stop_id: u32) -> Result<(), std:
     Ok(())
 }
 
+pub fn create_and_write_contacts_concurrent(
+    start_id: u32,
+    stop_id: u32,
+    thread_count: u32,
+) -> Result<(), std::io::Error> {
+    let raw_stride = (stop_id as f32 - start_id as f32) / thread_count as f32;
+    let stride = raw_stride.ceil() as u32;
+    let stride = stride + 1;
+
+    let mut handles: Vec<JoinHandle<Result<(), std::io::Error>>> = Vec::new();
+    let mut start_index = start_id;
+    for _ in 0..thread_count {
+        let stop_index = start_index + stride - 1;
+        let stop_index = cmp::min(stop_index, stop_id);
+
+        let handle = thread::spawn(move || {
+            create_and_write_contacts(start_index, stop_index)?;
+            println!(
+                "create_and_write_contacts: {} to {}",
+                start_index, stop_index
+            );
+            Ok(())
+        });
+        handles.push(handle);
+        start_index += stride;
+    }
+
+    for handle in handles {
+        handle.join().unwrap().unwrap();
+    }
+
+    Ok(())
+}
+
 pub fn read_contacts(start_id: u32, stop_id: u32) -> Result<Vec<Contact>, std::io::Error> {
     let mut index = start_id;
     let mut contacts = Vec::new();
@@ -152,8 +189,8 @@ impl Iterator for RandomContactIterator {
 #[cfg(test)]
 mod tests {
     use crate::{
-        create_and_write_contacts, read_contact, read_contacts, write_contact, Contact,
-        RandomContactIterator,
+        create_and_write_contacts, create_and_write_contacts_concurrent, read_contact,
+        read_contacts, write_contact, Contact, RandomContactIterator,
     };
     use serde_json::Value;
 
@@ -231,6 +268,13 @@ mod tests {
 
         assert_eq!(contacts.len(), 3);
         assert_eq!(contacts.get(0).unwrap().id, 100);
+
+        Ok(())
+    }
+
+    #[test]
+    fn concurent_creation() -> Result<(), std::io::Error> {
+        create_and_write_contacts_concurrent(0u32, 15u32, 4u32)?;
 
         Ok(())
     }

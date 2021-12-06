@@ -30,7 +30,8 @@ struct ExecutionBlock {
 }
 
 /// Calculate a set of inclusive ranges that covers the specified inclusive ranges.
-/// The last range may be slightly smaller than the others
+/// The last range may be slightly smaller than the others and the number of blocks can be less
+/// than specified if stop - start is too small
 fn calculate_execution_blocks(start: u32, stop: u32, number_of_blocks: u32) -> Vec<ExecutionBlock> {
     let mut execution_blocks = Vec::new();
 
@@ -47,6 +48,10 @@ fn calculate_execution_blocks(start: u32, stop: u32, number_of_blocks: u32) -> V
         });
 
         start_index += stride;
+
+        if start_index > stop {
+            break;
+        }
     }
 
     execution_blocks
@@ -290,8 +295,8 @@ mod tests {
 
     #[test]
     fn bulk_write_bulk_read() -> Result<(), std::io::Error> {
-        create_and_write_contacts(100u32, 102u32)?;
-        let contacts = read_contacts(100u32, 102u32)?;
+        create_and_write_contacts(100, 102)?;
+        let contacts = read_contacts(100, 102)?;
 
         assert_eq!(contacts.len(), 3);
         assert_eq!(contacts.get(0).unwrap().id, 100);
@@ -301,14 +306,15 @@ mod tests {
 
     #[test]
     fn concurent_creation() -> Result<(), std::io::Error> {
-        create_and_write_contacts_concurrent(0u32, 15u32, 4u32)?;
+        create_and_write_contacts_concurrent(0, 15, 4)?;
 
         Ok(())
     }
 
     #[test]
     fn block_creation() {
-        let blocks = calculate_execution_blocks(0u32, 100u32, 4);
+        let blocks = calculate_execution_blocks(0, 100, 4);
+        assert_eq!(4, blocks.len());
         assert!(matches!(
             blocks.get(0),
             Some(ExecutionBlock {
@@ -322,6 +328,42 @@ mod tests {
             Some(ExecutionBlock {
                 start_index: 78,
                 stop_index: 100
+            })
+        ));
+
+        let blocks = calculate_execution_blocks(5, 10, 2);
+        assert_eq!(2, blocks.len());
+        assert!(matches!(
+            blocks.get(0),
+            Some(ExecutionBlock {
+                start_index: 5,
+                stop_index: 8
+            })
+        ));
+
+        assert!(matches!(
+            blocks.get(1),
+            Some(ExecutionBlock {
+                start_index: 9,
+                stop_index: 10
+            })
+        ));
+
+        let blocks = calculate_execution_blocks(5, 10, 7);
+        assert_eq!(3, blocks.len());
+        assert!(matches!(
+            blocks.get(0),
+            Some(ExecutionBlock {
+                start_index: 5,
+                stop_index: 6
+            })
+        ));
+
+        assert!(matches!(
+            blocks.get(2),
+            Some(ExecutionBlock {
+                start_index: 9,
+                stop_index: 10
             })
         ));
     }

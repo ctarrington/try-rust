@@ -23,6 +23,35 @@ pub struct Contact {
     address: Address,
 }
 
+/// start and end of the inclusive execution block
+struct ExecutionBlock {
+    start_index: u32,
+    stop_index: u32,
+}
+
+/// Calculate a set of inclusive ranges that covers the specified inclusive ranges.
+/// The last range may be slightly smaller than the others
+fn calculate_execution_blocks(start: u32, stop: u32, number_of_blocks: u32) -> Vec<ExecutionBlock> {
+    let mut execution_blocks = Vec::new();
+
+    let raw_stride = (stop as f32 - start as f32) / number_of_blocks as f32;
+    let stride = raw_stride.ceil() as u32 + 1;
+
+    let mut start_index = start;
+    for _ in 0..number_of_blocks {
+        let stop_index = start_index + stride - 1;
+        let stop_index = cmp::min(stop_index, stop);
+        execution_blocks.push(ExecutionBlock {
+            start_index,
+            stop_index,
+        });
+
+        start_index += stride;
+    }
+
+    execution_blocks
+}
+
 struct RandomStringIterator {
     values: Vec<String>,
     rng: ThreadRng,
@@ -110,16 +139,14 @@ pub fn create_and_write_contacts_concurrent(
     stop_id: u32,
     thread_count: u32,
 ) -> Result<(), std::io::Error> {
-    let raw_stride = (stop_id as f32 - start_id as f32) / thread_count as f32;
-    let stride = raw_stride.ceil() as u32;
-    let stride = stride + 1;
+    let blocks = calculate_execution_blocks(start_id, stop_id, thread_count);
 
     let mut handles: Vec<JoinHandle<Result<(), std::io::Error>>> = Vec::new();
-    let mut start_index = start_id;
-    for _ in 0..thread_count {
-        let stop_index = start_index + stride - 1;
-        let stop_index = cmp::min(stop_index, stop_id);
-
+    for ExecutionBlock {
+        start_index,
+        stop_index,
+    } in blocks
+    {
         let handle = thread::spawn(move || {
             create_and_write_contacts(start_index, stop_index)?;
             println!(
@@ -129,7 +156,6 @@ pub fn create_and_write_contacts_concurrent(
             Ok(())
         });
         handles.push(handle);
-        start_index += stride;
     }
 
     for handle in handles {
@@ -189,8 +215,9 @@ impl Iterator for RandomContactIterator {
 #[cfg(test)]
 mod tests {
     use crate::{
-        create_and_write_contacts, create_and_write_contacts_concurrent, read_contact,
-        read_contacts, write_contact, Contact, RandomContactIterator,
+        calculate_execution_blocks, create_and_write_contacts,
+        create_and_write_contacts_concurrent, read_contact, read_contacts, write_contact, Contact,
+        ExecutionBlock, RandomContactIterator,
     };
     use serde_json::Value;
 
@@ -277,5 +304,25 @@ mod tests {
         create_and_write_contacts_concurrent(0u32, 15u32, 4u32)?;
 
         Ok(())
+    }
+
+    #[test]
+    fn block_creation() {
+        let blocks = calculate_execution_blocks(0u32, 100u32, 4);
+        assert!(matches!(
+            blocks.get(0),
+            Some(ExecutionBlock {
+                start_index: 0,
+                stop_index: 25
+            })
+        ));
+
+        assert!(matches!(
+            blocks.get(3),
+            Some(ExecutionBlock {
+                start_index: 78,
+                stop_index: 100
+            })
+        ));
     }
 }

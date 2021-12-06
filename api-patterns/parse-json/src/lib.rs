@@ -2,10 +2,11 @@ use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::cmp;
 use std::fs;
+use std::path::Path;
 use std::thread;
 use std::thread::JoinHandle;
 
-const CONTACT_FILE_PATH: &str = "./output/contacts/contact";
+const OUTPUT_PATH: &str = "./output/contacts/";
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Address {
@@ -110,8 +111,18 @@ impl RandomContactIterator {
     }
 }
 
+pub fn ensure_clean_path() -> std::io::Result<()> {
+    if Path::new(OUTPUT_PATH).exists() {
+        println!("deleting output directory {}", OUTPUT_PATH);
+    }
+
+    println!("creating output directory {}", OUTPUT_PATH);
+    fs::create_dir_all(OUTPUT_PATH)?;
+
+    Ok(())
+}
 fn file_path(id: u32) -> String {
-    format!("{}{}.out", CONTACT_FILE_PATH, id)
+    format!("{}contact{}.out", OUTPUT_PATH, id)
 }
 
 pub fn write_contact(contact: Contact) -> Result<(), std::io::Error> {

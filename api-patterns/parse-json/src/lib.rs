@@ -127,10 +127,7 @@ fn file_path(id: u32) -> String {
 
 pub fn write_contact(contact: Contact) -> Result<(), std::io::Error> {
     let serialized_contact = serde_json::to_string(&contact)?;
-
-    fs::write(file_path(contact.id), serialized_contact)
-        .expect(&format!("Unable to write {}", file_path(contact.id)));
-
+    fs::write(file_path(contact.id), serialized_contact)?;
     Ok(())
 }
 
@@ -175,7 +172,7 @@ pub fn create_and_write_contacts_concurrent(
     }
 
     for handle in handles {
-        handle.join().unwrap().unwrap();
+        handle.join().unwrap()?;
     }
 
     Ok(())
@@ -232,10 +229,12 @@ impl Iterator for RandomContactIterator {
 mod tests {
     use crate::{
         calculate_execution_blocks, create_and_write_contacts,
-        create_and_write_contacts_concurrent, read_contact, read_contacts, write_contact, Contact,
-        ExecutionBlock, RandomContactIterator,
+        create_and_write_contacts_concurrent, file_path, read_contact, read_contacts,
+        write_contact, Contact, ExecutionBlock, RandomContactIterator,
     };
     use serde_json::Value;
+    use std::fs;
+    use std::fs::OpenOptions;
 
     fn get_raw() -> &'static str {
         r#"
@@ -322,6 +321,32 @@ mod tests {
         Ok(())
     }
 
+    fn block_contact_write(id: u32) -> Result<(), std::io::Error> {
+        let path = file_path(id);
+        let _result = OpenOptions::new().create(true).write(true).open(&path);
+        let mut perms = fs::metadata(&path)?.permissions();
+        perms.set_readonly(true);
+        fs::set_permissions(&path, perms)?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn failed_write() -> Result<(), std::io::Error> {
+        block_contact_write(1002)?;
+        assert!(create_and_write_contacts(1001, 1002).is_err());
+
+        Ok(())
+    }
+
+    #[test]
+    fn failed_write_concurrent() -> Result<(), std::io::Error> {
+        block_contact_write(1002)?;
+        assert!(create_and_write_contacts_concurrent(1001, 1010, 2).is_err());
+
+        Ok(())
+    }
+
     #[test]
     fn block_creation() {
         let blocks = calculate_execution_blocks(0, 100, 4);
@@ -375,6 +400,16 @@ mod tests {
             Some(ExecutionBlock {
                 start_index: 9,
                 stop_index: 10
+            })
+        ));
+
+        let blocks = calculate_execution_blocks(0, 0, 2);
+        assert_eq!(1, blocks.len());
+        assert!(matches!(
+            blocks.get(0),
+            Some(ExecutionBlock {
+                start_index: 0,
+                stop_index: 0
             })
         ));
     }

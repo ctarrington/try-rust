@@ -114,6 +114,8 @@ impl RandomContactIterator {
 pub fn ensure_clean_path() -> std::io::Result<()> {
     if Path::new(OUTPUT_PATH).exists() {
         println!("deleting output directory {}", OUTPUT_PATH);
+        fs::remove_dir_all(OUTPUT_PATH)?;
+        println!("after delete of output directory {}", OUTPUT_PATH);
     }
 
     println!("creating output directory {}", OUTPUT_PATH);
@@ -229,10 +231,11 @@ impl Iterator for RandomContactIterator {
 mod tests {
     use crate::{
         calculate_execution_blocks, create_and_write_contacts,
-        create_and_write_contacts_concurrent, file_path, read_contact, read_contacts,
-        write_contact, Contact, ExecutionBlock, RandomContactIterator,
+        create_and_write_contacts_concurrent, ensure_clean_path, file_path, read_contact,
+        read_contacts, write_contact, Contact, ExecutionBlock, RandomContactIterator,
     };
     use serde_json::Value;
+    use serial_test::serial;
     use std::fs;
     use std::fs::OpenOptions;
 
@@ -250,6 +253,16 @@ mod tests {
             "somemetadata": "this is ignored"
             }
         "#
+    }
+
+    fn set_readonly_for_contact(id: u32, value: bool) -> Result<(), std::io::Error> {
+        let path = file_path(id);
+        let _result = OpenOptions::new().create(true).write(true).open(&path);
+        let mut perms = fs::metadata(&path)?.permissions();
+        perms.set_readonly(value);
+        fs::set_permissions(&path, perms)?;
+
+        Ok(())
     }
 
     #[test]
@@ -291,7 +304,9 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn read_and_write_contact() -> Result<(), std::io::Error> {
+        ensure_clean_path()?;
         let raw = get_raw();
         let fred: Contact = serde_json::from_str(raw)?;
 
@@ -304,7 +319,9 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn bulk_write_bulk_read() -> Result<(), std::io::Error> {
+        ensure_clean_path()?;
         create_and_write_contacts(100, 102)?;
         let contacts = read_contacts(100, 102)?;
 
@@ -315,35 +332,33 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn concurent_creation() -> Result<(), std::io::Error> {
+        ensure_clean_path()?;
         create_and_write_contacts_concurrent(0, 15, 4)?;
 
         Ok(())
     }
 
-    fn block_contact_write(id: u32) -> Result<(), std::io::Error> {
-        let path = file_path(id);
-        let _result = OpenOptions::new().create(true).write(true).open(&path);
-        let mut perms = fs::metadata(&path)?.permissions();
-        perms.set_readonly(true);
-        fs::set_permissions(&path, perms)?;
-
-        Ok(())
-    }
-
     #[test]
+    #[serial]
     fn failed_write() -> Result<(), std::io::Error> {
-        block_contact_write(1002)?;
+        ensure_clean_path()?;
+        set_readonly_for_contact(1002, true)?;
         assert!(create_and_write_contacts(1001, 1002).is_err());
 
+        set_readonly_for_contact(1002, false)?;
         Ok(())
     }
 
     #[test]
+    #[serial]
     fn failed_write_concurrent() -> Result<(), std::io::Error> {
-        block_contact_write(1002)?;
+        ensure_clean_path()?;
+        set_readonly_for_contact(1002, true)?;
         assert!(create_and_write_contacts_concurrent(1001, 1010, 2).is_err());
 
+        set_readonly_for_contact(1002, false)?;
         Ok(())
     }
 

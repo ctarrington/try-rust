@@ -266,6 +266,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn parse_as_value() -> serde_json::Result<()> {
         let raw = get_raw();
         let parsed_value: Value = serde_json::from_str(raw)?;
@@ -275,6 +276,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn parse_as_object() -> serde_json::Result<()> {
         let raw = get_raw();
         let fred: Contact = serde_json::from_str(raw)?;
@@ -284,6 +286,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn create_contact_json() {
         let mut contact_iterator = RandomContactIterator::new(0, 2);
         let contact = contact_iterator.next();

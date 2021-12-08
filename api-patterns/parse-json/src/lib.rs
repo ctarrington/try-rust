@@ -366,6 +366,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn block_creation() {
         let blocks = calculate_execution_blocks(0, 100, 4);
         assert_eq!(4, blocks.len());

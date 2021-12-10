@@ -236,8 +236,8 @@ mod tests {
     };
     use serde_json::Value;
     use serial_test::serial;
-    use std::fs;
     use std::fs::OpenOptions;
+    use std::{fs, time};
 
     fn get_raw() -> &'static str {
         r#"
@@ -336,7 +336,7 @@ mod tests {
 
     #[test]
     #[serial]
-    fn concurent_creation() -> Result<(), std::io::Error> {
+    fn concurrent_creation() -> Result<(), std::io::Error> {
         ensure_clean_path()?;
         create_and_write_contacts_concurrent(0, 15, 4)?;
 
@@ -362,6 +362,34 @@ mod tests {
         assert!(create_and_write_contacts_concurrent(1001, 1010, 2).is_err());
 
         set_readonly_for_contact(1002, false)?;
+        Ok(())
+    }
+
+    #[test]
+    #[serial]
+    fn concurrent_advantage() -> Result<(), std::io::Error> {
+        let contact_count = 10000;
+
+        ensure_clean_path()?;
+        let begin = time::Instant::now();
+        create_and_write_contacts(0, contact_count)?;
+        let elapsed = time::Instant::now() - begin;
+
+        std::thread::sleep(time::Duration::from_millis(10));
+
+        ensure_clean_path()?;
+        let thread_count = 3;
+        let begin = time::Instant::now();
+        create_and_write_contacts_concurrent(0, contact_count, thread_count)?;
+        let elapsed_concurrent = time::Instant::now() - begin;
+
+        let ratio = elapsed.as_nanos() as f32 / elapsed_concurrent.as_nanos() as f32;
+
+        println!(
+            "elapsed: {:?}, elapsed_concurrent: {:?}, ratio: {:?}",
+            elapsed, elapsed_concurrent, ratio
+        );
+        assert!(ratio > 2.5);
         Ok(())
     }
 

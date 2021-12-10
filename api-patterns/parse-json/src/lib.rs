@@ -368,7 +368,7 @@ mod tests {
     #[test]
     #[serial]
     fn concurrent_advantage() -> Result<(), std::io::Error> {
-        let contact_count = 10000;
+        let contact_count = 1000;
 
         ensure_clean_path()?;
         let begin = time::Instant::now();
@@ -384,12 +384,13 @@ mod tests {
         let elapsed_concurrent = time::Instant::now() - begin;
 
         let ratio = elapsed.as_nanos() as f32 / elapsed_concurrent.as_nanos() as f32;
+        let desired_ratio = 1.5;
 
         println!(
-            "elapsed: {:?}, elapsed_concurrent: {:?}, ratio: {:?}",
-            elapsed, elapsed_concurrent, ratio
+            "elapsed: {:?}, elapsed_concurrent: {:?}, ratio: {:?}, desired ratio: {:?}",
+            elapsed, elapsed_concurrent, ratio, desired_ratio
         );
-        assert!(ratio > 2.5);
+        assert!(ratio > desired_ratio);
         Ok(())
     }
 

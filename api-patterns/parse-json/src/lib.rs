@@ -1,10 +1,11 @@
 use rand::prelude::*;
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::cmp;
-use std::fs;
 use std::path::Path;
 use std::thread;
 use std::thread::JoinHandle;
+use std::{fs, time};
 
 const OUTPUT_PATH: &str = "./output/contacts/";
 
@@ -20,6 +21,7 @@ pub struct Address {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Contact {
     id: u32,
+    proof_of_work: u32,
     name: String,
     address: Address,
 }
@@ -30,7 +32,18 @@ struct ExecutionBlock {
     stop_index: u32,
 }
 
-/// Calculate a set of inclusive ranges that covers the specified inclusive ranges.
+fn calculate_proof_of_work() -> u32 {
+    let mut rng = rand::thread_rng();
+
+    let mut value: u32 = rng.gen_range(0..1000);
+    while value > 3 {
+        value = rng.gen_range(0..1000);
+    }
+
+    value
+}
+
+/// Calculate a set of inclusive ranges that covers the specified inclusive range.
 /// The last range may be slightly smaller than the others and the number of blocks can be less
 /// than specified if stop - start is too small
 fn calculate_execution_blocks(start: u32, stop: u32, number_of_blocks: u32) -> Vec<ExecutionBlock> {
@@ -112,6 +125,7 @@ impl RandomContactIterator {
 }
 
 pub fn ensure_clean_path() -> std::io::Result<()> {
+    std::thread::sleep(time::Duration::from_millis(10));
     if Path::new(OUTPUT_PATH).exists() {
         println!("deleting output directory {}", OUTPUT_PATH);
         fs::remove_dir_all(OUTPUT_PATH)?;
@@ -120,6 +134,7 @@ pub fn ensure_clean_path() -> std::io::Result<()> {
 
     println!("creating output directory {}", OUTPUT_PATH);
     fs::create_dir_all(OUTPUT_PATH)?;
+    std::thread::sleep(time::Duration::from_millis(10));
 
     Ok(())
 }
@@ -212,10 +227,13 @@ impl Iterator for RandomContactIterator {
             zip: "21228".to_string(),
         };
 
+        let proof_of_work = calculate_proof_of_work();
+
         let contact = Some(Contact {
             id: self.current_id,
             name,
             address,
+            proof_of_work,
         });
 
         if self.current_id > self.stop_id {
@@ -243,6 +261,7 @@ mod tests {
         r#"
             {"id": 123,
             "name": "Fred",
+            "proof_of_work": 11,
             "address": {
                 "street1": "123 Main Street",
                 "street2": "",
@@ -339,6 +358,9 @@ mod tests {
     fn concurrent_creation() -> Result<(), std::io::Error> {
         ensure_clean_path()?;
         create_and_write_contacts_concurrent(0, 15, 4)?;
+        assert!(matches!(read_contact(0), Ok(Contact { id: 0, .. })));
+        assert!(matches!(read_contact(15), Ok(Contact { id: 15, .. })));
+        assert!(read_contact(1).unwrap().proof_of_work <= 3);
 
         Ok(())
     }
@@ -375,10 +397,8 @@ mod tests {
         create_and_write_contacts(0, contact_count)?;
         let elapsed = time::Instant::now() - begin;
 
-        std::thread::sleep(time::Duration::from_millis(10));
-
         ensure_clean_path()?;
-        let thread_count = 3;
+        let thread_count = 4;
         let begin = time::Instant::now();
         create_and_write_contacts_concurrent(0, contact_count, thread_count)?;
         let elapsed_concurrent = time::Instant::now() - begin;

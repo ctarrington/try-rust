@@ -200,7 +200,6 @@ pub fn read_contacts(start_id: u32, stop_id: u32) -> Result<Vec<Contact>, std::i
     let mut contacts = Vec::new();
 
     while let Ok(contact) = read_contact(index) {
-        println!("contact {:?}", contact);
         contacts.push(contact);
         index += 1;
         if index > stop_id {
@@ -209,6 +208,36 @@ pub fn read_contacts(start_id: u32, stop_id: u32) -> Result<Vec<Contact>, std::i
     }
 
     Ok(contacts)
+}
+
+pub fn read_contacts_concurrent(
+    start_id: u32,
+    stop_id: u32,
+    thread_count: u32,
+) -> Result<Vec<Contact>, std::io::Error> {
+    let blocks = calculate_execution_blocks(start_id, stop_id, thread_count);
+
+    let mut handles: Vec<JoinHandle<Result<Vec<Contact>, std::io::Error>>> = Vec::new();
+    for ExecutionBlock {
+        start_index,
+        stop_index,
+    } in blocks
+    {
+        let handle = thread::spawn(move || {
+            let contacts = read_contacts(start_index, stop_index)?;
+            println!("read_contacts {} to {}", start_index, stop_index);
+            Ok(contacts)
+        });
+        handles.push(handle);
+    }
+
+    let mut consolidated_contacts = Vec::new();
+    for handle in handles {
+        let mut contacts = handle.join().unwrap()?;
+        consolidated_contacts.append(&mut contacts);
+    }
+
+    Ok(consolidated_contacts)
 }
 
 impl Iterator for RandomContactIterator {
@@ -250,7 +279,8 @@ mod tests {
     use crate::{
         calculate_execution_blocks, create_and_write_contacts,
         create_and_write_contacts_concurrent, ensure_clean_path, file_path, read_contact,
-        read_contacts, write_contact, Contact, ExecutionBlock, RandomContactIterator,
+        read_contacts, read_contacts_concurrent, write_contact, Contact, ExecutionBlock,
+        RandomContactIterator,
     };
     use serde_json::Value;
     use serial_test::serial;
@@ -361,6 +391,12 @@ mod tests {
         assert!(matches!(read_contact(0), Ok(Contact { id: 0, .. })));
         assert!(matches!(read_contact(15), Ok(Contact { id: 15, .. })));
         assert!(read_contact(1).unwrap().proof_of_work <= 3);
+
+        let contacts = read_contacts_concurrent(0, 15, 4);
+        assert!(matches!(
+            contacts.as_ref().unwrap().get(0),
+            Some(Contact { id: 0, .. })
+        ));
 
         Ok(())
     }

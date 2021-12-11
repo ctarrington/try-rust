@@ -32,15 +32,17 @@ struct ExecutionBlock {
     stop_index: u32,
 }
 
-fn calculate_proof_of_work() -> u32 {
+/// simplistic proof of work scheme to introduce a little variability how long a process takes
+/// picks a random number until it is at or below a target
+fn calculate_proof_of_work(target: u32, range_max: u32) -> u32 {
     let mut rng = rand::thread_rng();
 
-    let mut value: u32 = rng.gen_range(0..1000);
-    while value > 3 {
-        value = rng.gen_range(0..1000);
+    loop {
+        let value: u32 = rng.gen_range(0..range_max);
+        if value <= target {
+            break value;
+        }
     }
-
-    value
 }
 
 /// Calculate a set of inclusive ranges that covers the specified inclusive range.
@@ -256,7 +258,7 @@ impl Iterator for RandomContactIterator {
             zip: "21228".to_string(),
         };
 
-        let proof_of_work = calculate_proof_of_work();
+        let proof_of_work = calculate_proof_of_work(3, 10000);
 
         let contact = Some(Contact {
             id: self.current_id,

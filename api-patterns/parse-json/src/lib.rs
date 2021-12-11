@@ -392,11 +392,9 @@ mod tests {
         assert!(matches!(read_contact(15), Ok(Contact { id: 15, .. })));
         assert!(read_contact(1).unwrap().proof_of_work <= 3);
 
-        let contacts = read_contacts_concurrent(0, 15, 4);
-        assert!(matches!(
-            contacts.as_ref().unwrap().get(0),
-            Some(Contact { id: 0, .. })
-        ));
+        let contacts = read_contacts_concurrent(0, 15, 4)?;
+        assert!(matches!(contacts.get(0), Some(Contact { id: 0, .. })));
+        assert!(matches!(contacts.get(15), Some(Contact { id: 15, .. })));
 
         Ok(())
     }

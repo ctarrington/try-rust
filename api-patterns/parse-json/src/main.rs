@@ -5,8 +5,11 @@ use parse_json::{
 fn main() -> Result<(), std::io::Error> {
     ensure_clean_path()?;
 
-    create_and_write_contacts_concurrent(0, 100, 4)?;
-    let contacts: Vec<Contact> = read_contacts_concurrent(0, 100, 4)?;
+    let contact_count = 1000;
+    let thread_count = 4;
+
+    create_and_write_contacts_concurrent(0, contact_count, thread_count)?;
+    let contacts: Vec<Contact> = read_contacts_concurrent(0, contact_count, thread_count)?;
 
     println!("wrote and read {} contacts", contacts.len());
     println!("contact.get(0) = {:?}", contacts.get(0).unwrap());

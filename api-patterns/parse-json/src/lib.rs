@@ -2,10 +2,10 @@ use rand::prelude::*;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::cmp;
+use std::fs;
 use std::path::Path;
 use std::thread;
 use std::thread::JoinHandle;
-use std::{fs, time};
 
 const OUTPUT_PATH: &str = "./output/contacts/";
 
@@ -127,7 +127,6 @@ impl RandomContactIterator {
 }
 
 pub fn ensure_clean_path() -> std::io::Result<()> {
-    std::thread::sleep(time::Duration::from_millis(10));
     if Path::new(OUTPUT_PATH).exists() {
         println!("deleting output directory {}", OUTPUT_PATH);
         fs::remove_dir_all(OUTPUT_PATH)?;
@@ -136,7 +135,6 @@ pub fn ensure_clean_path() -> std::io::Result<()> {
 
     println!("creating output directory {}", OUTPUT_PATH);
     fs::create_dir_all(OUTPUT_PATH)?;
-    std::thread::sleep(time::Duration::from_millis(10));
 
     Ok(())
 }
@@ -166,6 +164,9 @@ pub fn create_and_write_contacts(start_id: u32, stop_id: u32) -> Result<(), std:
     Ok(())
 }
 
+/// Use the specified number of threads to create and write contacts to disk.
+/// I think of this as a parallel algorithm with each thread behaving in a concurrent fashion since it is
+/// interleaving cpu intensive creation with waits for the disk io.
 pub fn create_and_write_contacts_concurrent(
     start_id: u32,
     stop_id: u32,
@@ -258,7 +259,7 @@ impl Iterator for RandomContactIterator {
             zip: "21228".to_string(),
         };
 
-        let proof_of_work = calculate_proof_of_work(3, 10000);
+        let proof_of_work = calculate_proof_of_work(3, 10_000);
 
         let contact = Some(Contact {
             id: self.current_id,

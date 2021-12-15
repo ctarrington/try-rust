@@ -164,6 +164,41 @@ pub fn create_and_write_contacts(start_id: u32, stop_id: u32) -> Result<(), std:
     Ok(())
 }
 
+pub fn create_contacts(start_id: u32, stop_id: u32) -> Vec<Contact> {
+    let mut contact_iterator = RandomContactIterator::new(start_id, stop_id);
+
+    let mut contacts = Vec::new();
+    while let Some(contact) = contact_iterator.next() {
+        contacts.push(contact);
+    }
+
+    contacts
+}
+
+pub fn create_contacts_concurrent(start_id: u32, stop_id: u32, thread_count: u32) -> Vec<Contact> {
+    let blocks = calculate_execution_blocks(start_id, stop_id, thread_count);
+
+    let mut handles = Vec::new();
+    for ExecutionBlock {
+        start_index,
+        stop_index,
+    } in blocks
+    {
+        let handle = thread::spawn(move || {
+            println!("create_contacts: {} to {}", start_index, stop_index);
+            create_contacts(start_index, stop_index)
+        });
+        handles.push(handle);
+    }
+
+    let mut contacts = Vec::new();
+    for handle in handles {
+        contacts.append(&mut handle.join().unwrap());
+    }
+
+    contacts
+}
+
 /// Use the specified number of threads to create and write contacts to disk.
 /// I think of this as a parallel algorithm with each thread behaving in a concurrent fashion since it is
 /// interleaving cpu intensive creation with waits for the disk io.
@@ -281,9 +316,9 @@ impl Iterator for RandomContactIterator {
 mod tests {
     use crate::{
         calculate_execution_blocks, create_and_write_contacts,
-        create_and_write_contacts_concurrent, ensure_clean_path, file_path, read_contact,
-        read_contacts, read_contacts_concurrent, write_contact, Contact, ExecutionBlock,
-        RandomContactIterator,
+        create_and_write_contacts_concurrent, create_contacts, create_contacts_concurrent,
+        ensure_clean_path, file_path, read_contact, read_contacts, read_contacts_concurrent,
+        write_contact, Contact, ExecutionBlock, RandomContactIterator,
     };
     use serde_json::Value;
     use serial_test::serial;
@@ -356,6 +391,20 @@ mod tests {
     }
 
     #[test]
+    fn create_contacts_no_io() {
+        let contacts = create_contacts(0, 10);
+        assert_eq!(contacts.len(), 11);
+    }
+
+    #[test]
+    fn create_contacts_concurrent_no_io() {
+        let contacts = create_contacts_concurrent(0, 10, 4);
+        assert_eq!(contacts.len(), 11);
+        assert_eq!(contacts.get(0).unwrap().id, 0);
+        assert_eq!(contacts.get(10).unwrap().id, 10);
+    }
+
+    #[test]
     #[serial]
     fn read_and_write_contact() -> Result<(), std::io::Error> {
         ensure_clean_path()?;
@@ -385,7 +434,7 @@ mod tests {
 
     #[test]
     #[serial]
-    fn concurrent_creation() -> Result<(), std::io::Error> {
+    fn concurrent_create_and_write() -> Result<(), std::io::Error> {
         ensure_clean_path()?;
         create_and_write_contacts_concurrent(0, 15, 4)?;
         assert!(matches!(read_contact(0), Ok(Contact { id: 0, .. })));
@@ -446,6 +495,30 @@ mod tests {
         );
         assert!(ratio > desired_ratio);
         Ok(())
+    }
+
+    #[test]
+    #[serial]
+    fn concurrent_advantage_no_io() {
+        let contact_count = 1000;
+
+        let begin = time::Instant::now();
+        create_contacts(0, contact_count);
+        let elapsed = time::Instant::now() - begin;
+
+        let thread_count = 4;
+        let begin = time::Instant::now();
+        create_contacts_concurrent(0, contact_count, thread_count);
+        let elapsed_concurrent = time::Instant::now() - begin;
+
+        let ratio = elapsed.as_nanos() as f32 / elapsed_concurrent.as_nanos() as f32;
+        let desired_ratio = 1.5;
+
+        println!(
+            "elapsed: {:?}, elapsed_concurrent for no io: {:?}, ratio: {:?}, desired ratio: {:?}",
+            elapsed, elapsed_concurrent, ratio, desired_ratio
+        );
+        assert!(ratio > desired_ratio);
     }
 
     #[test]

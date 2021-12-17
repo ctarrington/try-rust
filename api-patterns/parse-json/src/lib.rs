@@ -21,6 +21,7 @@ pub struct Address {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Contact {
     id: u32,
+    big_number: u32,
     proof_of_work: u32,
     name: String,
     address: Address,
@@ -278,6 +279,24 @@ pub fn read_contacts_concurrent(
     Ok(consolidated_contacts)
 }
 
+pub fn find_minimum_contact<'a>(
+    contacts: &'a Vec<Contact>,
+    start_index: u32,
+    stop_index: u32,
+) -> &'a Contact {
+    let slice = &contacts[start_index as usize..=stop_index as usize];
+    slice
+        .iter()
+        .reduce(|min_contact, contact| {
+            if min_contact.big_number <= contact.big_number {
+                min_contact
+            } else {
+                contact
+            }
+        })
+        .unwrap()
+}
+
 impl Iterator for RandomContactIterator {
     type Item = Contact;
 
@@ -296,8 +315,12 @@ impl Iterator for RandomContactIterator {
 
         let proof_of_work = calculate_proof_of_work(3, 10_000);
 
+        let mut rng = rand::thread_rng();
+
+        let big_number: u32 = rng.gen_range(0..1_000_000);
         let contact = Some(Contact {
             id: self.current_id,
+            big_number,
             name,
             address,
             proof_of_work,
@@ -317,8 +340,8 @@ mod tests {
     use crate::{
         calculate_execution_blocks, create_and_write_contacts,
         create_and_write_contacts_concurrent, create_contacts, create_contacts_concurrent,
-        ensure_clean_path, file_path, read_contact, read_contacts, read_contacts_concurrent,
-        write_contact, Contact, ExecutionBlock, RandomContactIterator,
+        ensure_clean_path, file_path, find_minimum_contact, read_contact, read_contacts,
+        read_contacts_concurrent, write_contact, Contact, ExecutionBlock, RandomContactIterator,
     };
     use serde_json::Value;
     use serial_test::serial;
@@ -330,6 +353,7 @@ mod tests {
             {"id": 123,
             "name": "Fred",
             "proof_of_work": 11,
+            "big_number": 1000,
             "address": {
                 "street1": "123 Main Street",
                 "street2": "",
@@ -350,6 +374,18 @@ mod tests {
         fs::set_permissions(&path, perms)?;
 
         Ok(())
+    }
+
+    #[test]
+    fn find_minimum() {
+        let contacts = create_contacts(0, 100);
+        let min_contact = find_minimum_contact(&contacts, 0, 100);
+        let min_value = contacts
+            .iter()
+            .map(|contact| contact.big_number)
+            .min()
+            .unwrap();
+        assert_eq!(min_value, min_contact.big_number);
     }
 
     #[test]

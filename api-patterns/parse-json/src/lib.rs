@@ -284,8 +284,7 @@ pub fn find_minimum_contact<'a>(
     start_index: u32,
     stop_index: u32,
 ) -> &'a Contact {
-    let slice = &contacts[start_index as usize..=stop_index as usize];
-    slice
+    &contacts[start_index as usize..=stop_index as usize]
         .iter()
         .reduce(|min_contact, contact| {
             if min_contact.big_number <= contact.big_number {

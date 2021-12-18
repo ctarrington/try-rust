@@ -194,7 +194,11 @@ pub fn create_contacts_concurrent(start_id: u32, stop_id: u32, thread_count: u32
 
     let mut contacts = Vec::new();
     for handle in handles {
-        contacts.append(&mut handle.join().unwrap());
+        contacts.append(
+            &mut handle
+                .join()
+                .expect("error getting contact from create handle"),
+        );
     }
 
     contacts
@@ -228,7 +232,7 @@ pub fn create_and_write_contacts_concurrent(
     }
 
     for handle in handles {
-        handle.join().unwrap()?;
+        handle.join().expect("error joining handles for writes")?;
     }
 
     Ok(())
@@ -272,7 +276,7 @@ pub fn read_contacts_concurrent(
 
     let mut consolidated_contacts = Vec::new();
     for handle in handles {
-        let mut contacts = handle.join().unwrap()?;
+        let mut contacts = handle.join().expect("error joining read contact handles")?;
         consolidated_contacts.append(&mut contacts);
     }
 
@@ -284,6 +288,18 @@ pub fn find_minimum_contact<'a>(
     start_index: u32,
     stop_index: u32,
 ) -> &'a Contact {
+    // I mostly think it makes sense to have assertions like this only enabled in debug mode
+    // Should look at the contracts crate
+    debug_assert!(
+        start_index < stop_index
+            && start_index < contacts.len() as u32
+            && stop_index < contacts.len() as u32,
+        "bad parameters: start_index: {} stop_index: {} contacts length: {}",
+        start_index,
+        stop_index,
+        contacts.len()
+    );
+
     &contacts[start_index as usize..=stop_index as usize]
         .iter()
         .reduce(|min_contact, contact| {

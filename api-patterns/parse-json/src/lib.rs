@@ -205,8 +205,6 @@ pub fn create_contacts_concurrent(start_id: u32, stop_id: u32, thread_count: u32
 }
 
 /// Use the specified number of threads to create and write contacts to disk.
-/// I think of this as a parallel algorithm with each thread behaving in a concurrent fashion since it is
-/// interleaving cpu intensive creation with waits for the disk io.
 pub fn create_and_write_contacts_concurrent(
     start_id: u32,
     stop_id: u32,

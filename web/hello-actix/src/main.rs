@@ -5,12 +5,15 @@ use std::{thread, time};
 use actix_web::web::Data;
 use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
 
+use serde::Serialize;
+
 /// calculated state can have information that is not shared with the UI
 struct CalculatedState {
     count: u32,
 }
 
 /// projection of the calculated state - just the fields that are needed for the UI
+#[derive(Serialize)]
 struct SharedState {
     count: u32,
 }
@@ -29,11 +32,10 @@ struct WrappedState {
 
 #[get("/")]
 async fn get_current(data: web::Data<WrappedState>) -> impl Responder {
-    let count = &data.current.lock().expect("unable to lock the data").count;
-    HttpResponse::Ok().body(format!(
-        "Hello world! From actix-web. How are you? count: {}",
-        *count
-    ))
+    let current = &*data.current.lock().expect("unable to lock the data");
+    let serialized: String =
+        serde_json::to_string(current).expect("unable to serialize the current state");
+    HttpResponse::Ok().body(serialized)
 }
 
 fn tick_state(current: &CalculatedState) -> CalculatedState {

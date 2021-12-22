@@ -28,7 +28,7 @@ struct WrappedState {
 }
 
 #[get("/")]
-async fn hello(data: web::Data<WrappedState>) -> impl Responder {
+async fn get_current(data: web::Data<WrappedState>) -> impl Responder {
     let count = &data.current.lock().expect("unable to lock the data").count;
     HttpResponse::Ok().body(format!(
         "Hello world! From actix-web. How are you? count: {}",
@@ -85,9 +85,15 @@ async fn main() -> std::io::Result<()> {
         }
     });
 
+    println!("listening at http://localhost:8080");
     // move a copy of the reference counted pointer to the shared state
-    HttpServer::new(move || App::new().app_data(wrapped_state.clone()).service(hello))
-        .bind("127.0.0.1:8080")?
-        .run()
-        .await
+    HttpServer::new(move || {
+        App::new()
+            .app_data(wrapped_state.clone())
+            .service(get_current)
+    })
+    .bind("127.0.0.1:8080")
+    .expect("unable to bind to address")
+    .run()
+    .await
 }

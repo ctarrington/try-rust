@@ -1,7 +1,7 @@
 use std::ops::Deref;
 use std::sync::Mutex;
 use std::time::Duration;
-use std::{thread, time};
+use std::{cmp, thread, time};
 
 use rand::Rng;
 
@@ -10,6 +10,43 @@ use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
 
 use serde::Serialize;
 
+/// start and end of the inclusive execution block
+struct ExecutionBlock {
+    start_index: usize,
+    stop_index: usize,
+}
+
+/// Calculate a set of inclusive ranges that covers the specified inclusive range.
+/// The last range may be slightly smaller than the others and the number of blocks can be less
+/// than specified if stop - start is too small
+fn calculate_execution_blocks(
+    start: usize,
+    stop: usize,
+    number_of_blocks: usize,
+) -> Vec<ExecutionBlock> {
+    let mut execution_blocks = Vec::new();
+
+    let raw_stride = (stop as f32 - start as f32) / number_of_blocks as f32;
+    let stride = raw_stride.ceil() as usize + 1;
+
+    let mut start_index = start;
+    for _ in 0..number_of_blocks {
+        let stop_index = start_index + stride - 1;
+        let stop_index = cmp::min(stop_index, stop);
+        execution_blocks.push(ExecutionBlock {
+            start_index,
+            stop_index,
+        });
+
+        start_index += stride;
+
+        if start_index > stop {
+            break;
+        }
+    }
+
+    execution_blocks
+}
 /// simplistic proof of work scheme to introduce a little variability how long a process takes
 /// picks a random number until it is at or below a target
 fn calculate_proof_of_work(target: u32, range_max: u32) -> u32 {
@@ -41,9 +78,36 @@ impl CalculatedState {
 
     fn tick(&mut self) {
         self.tick_count = self.tick_count + 1;
-        self.proofs
-            .iter_mut()
-            .for_each(|mut proof| *proof += calculate_proof_of_work(10, 10_000));
+
+        let blocks = calculate_execution_blocks(0, self.proofs.len() - 1, 1);
+
+        let mut handles = Vec::new();
+        for ExecutionBlock {
+            start_index,
+            stop_index,
+        } in blocks
+        {
+            let proofs = Vec::from(&self.proofs[start_index..=stop_index]);
+            let handle = thread::spawn(move || {
+                let mut new_proofs = Vec::new();
+                for proof in proofs {
+                    new_proofs.push(proof + calculate_proof_of_work(10, 10_000));
+                }
+                new_proofs
+            });
+            handles.push(handle);
+        }
+
+        let mut consolidated_proofs = Vec::new();
+        for handle in handles {
+            consolidated_proofs.append(
+                &mut handle
+                    .join()
+                    .expect("error getting proof from create handle"),
+            );
+        }
+
+        self.proofs = consolidated_proofs;
     }
 }
 

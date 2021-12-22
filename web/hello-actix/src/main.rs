@@ -23,37 +23,27 @@ fn calculate_proof_of_work(target: u32, range_max: u32) -> u32 {
     }
 }
 
-struct Thing {
-    proof_of_life: u32,
-}
-
-impl Thing {
-    fn new() -> Self {
-        Thing { proof_of_life: 0 }
-    }
-
-    fn tick(&mut self) {
-        self.proof_of_life += calculate_proof_of_work(10, 10_000);
-    }
-}
-
 /// calculated state can have information that is not shared with the UI
 struct CalculatedState {
     tick_count: u32,
-    things: Vec<Thing>,
+    proofs: Vec<u32>,
 }
 
 impl CalculatedState {
     fn new() -> Self {
         CalculatedState {
             tick_count: 0,
-            things: (0..850).map(|_| Thing::new()).collect(),
+            proofs: (0..850)
+                .map(|_| calculate_proof_of_work(10, 10_000))
+                .collect(),
         }
     }
 
     fn tick(&mut self) {
         self.tick_count = self.tick_count + 1;
-        self.things.iter_mut().for_each(|thing| thing.tick());
+        self.proofs
+            .iter_mut()
+            .for_each(|mut proof| *proof += calculate_proof_of_work(10, 10_000));
     }
 }
 
@@ -69,11 +59,7 @@ impl SharedState {
     fn new(calculated_state: &CalculatedState) -> Self {
         SharedState {
             tick_count: calculated_state.tick_count,
-            proof_of_work_list: calculated_state
-                .things
-                .iter()
-                .map(|thing| thing.proof_of_life)
-                .collect(),
+            proof_of_work_list: calculated_state.proofs.clone(),
         }
     }
 }

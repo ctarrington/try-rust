@@ -1,27 +1,55 @@
+use std::ops::Deref;
 use std::sync::Mutex;
 use std::time::Duration;
 use std::{thread, time};
+
+use rand::Rng;
 
 use actix_web::web::Data;
 use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
 
 use serde::Serialize;
 
+/// simplistic proof of work scheme to introduce a little variability how long a process takes
+/// picks a random number until it is at or below a target
+fn calculate_proof_of_work(target: u32, range_max: u32) -> u32 {
+    let mut rng = rand::thread_rng();
+
+    loop {
+        let value: u32 = rng.gen_range(0..range_max);
+        if value <= target {
+            break value;
+        }
+    }
+}
+
 /// calculated state can have information that is not shared with the UI
 struct CalculatedState {
-    count: u32,
+    tick_count: u32,
+    proof_of_work: u32,
+}
+
+impl CalculatedState {
+    fn new() -> Self {
+        CalculatedState {
+            tick_count: 0,
+            proof_of_work: 0,
+        }
+    }
 }
 
 /// projection of the calculated state - just the fields that are needed for the UI
 #[derive(Serialize)]
 struct SharedState {
-    count: u32,
+    tick_count: u32,
+    proof_of_work: u32,
 }
 
 impl SharedState {
     fn new(calculated_state: &CalculatedState) -> Self {
         SharedState {
-            count: calculated_state.count,
+            tick_count: calculated_state.tick_count,
+            proof_of_work: calculated_state.proof_of_work,
         }
     }
 }
@@ -30,42 +58,48 @@ struct WrappedState {
     current: Mutex<SharedState>,
 }
 
-#[get("/")]
-async fn get_current(data: web::Data<WrappedState>) -> impl Responder {
-    let current = &*data.current.lock().expect("unable to lock the data");
-    let serialized: String =
-        serde_json::to_string(current).expect("unable to serialize the current state");
-    HttpResponse::Ok().body(serialized)
-}
-
 fn tick_state(current: &CalculatedState) -> CalculatedState {
     CalculatedState {
-        count: current.count + 1,
+        tick_count: current.tick_count + 1,
+        proof_of_work: calculate_proof_of_work(10, 10_000),
     }
+}
+
+#[get("/")]
+async fn get_current(data: web::Data<WrappedState>) -> impl Responder {
+    // just using the derefed (unpacked) SharedState in the to_string works fine
+    // assigning it to a temp variable gives move issues
+    let serialized: String = serde_json::to_string(
+        data.current
+            .lock()
+            .expect("unable to lock the data")
+            .deref(),
+    )
+    .expect("unable to serialize the current state");
+    HttpResponse::Ok().body(serialized)
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let wrapped_state = Data::new(WrappedState {
-        current: Mutex::new(SharedState { count: 0 }),
+        current: Mutex::new(SharedState::new(&CalculatedState::new())),
     });
 
     // copy of pointer for use in the thread
     let wrapped_state_for_thread = wrapped_state.clone();
     thread::spawn(move || {
-        let mut calculated_state = CalculatedState { count: 0 };
+        let mut calculated_state = CalculatedState::new();
         loop {
             let begin = time::Instant::now();
             calculated_state = tick_state(&calculated_state);
 
             // grap the lock, swap the shared state, release the lock when current goes out of scope
             {
-                let new_shared_state = SharedState::new(&calculated_state);
                 let mut current = wrapped_state_for_thread
                     .current
                     .lock()
                     .expect("unable to lock the wrapped_state_for_thread");
-                *current = new_shared_state;
+                *current = SharedState::new(&calculated_state);
             }
 
             let elapsed = time::Instant::now() - begin;

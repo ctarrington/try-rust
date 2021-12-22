@@ -79,7 +79,7 @@ impl CalculatedState {
     fn tick(&mut self) {
         self.tick_count = self.tick_count + 1;
 
-        let blocks = calculate_execution_blocks(0, self.proofs.len() - 1, 1);
+        let blocks = calculate_execution_blocks(0, self.proofs.len() - 1, 4);
 
         let mut handles = Vec::new();
         for ExecutionBlock {

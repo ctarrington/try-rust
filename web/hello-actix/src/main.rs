@@ -26,43 +26,46 @@ fn calculate_proof_of_work(target: u32, range_max: u32) -> u32 {
 /// calculated state can have information that is not shared with the UI
 struct CalculatedState {
     tick_count: u32,
-    proof_of_work: u32,
+    proof_of_work_list: Vec<u32>,
 }
 
 impl CalculatedState {
     fn new() -> Self {
         CalculatedState {
             tick_count: 0,
-            proof_of_work: 0,
+            proof_of_work_list: vec![0u32; 10],
         }
+    }
+
+    fn tick(&mut self) {
+        self.tick_count = self.tick_count + 1;
+        self.proof_of_work_list = self
+            .proof_of_work_list
+            .iter()
+            .map(|value| value + calculate_proof_of_work(10, 10_000))
+            .collect::<Vec<u32>>();
     }
 }
 
 /// projection of the calculated state - just the fields that are needed for the UI
+/// having this level of indirection does require cloning
 #[derive(Serialize)]
 struct SharedState {
     tick_count: u32,
-    proof_of_work: u32,
+    proof_of_work_list: Vec<u32>,
 }
 
 impl SharedState {
     fn new(calculated_state: &CalculatedState) -> Self {
         SharedState {
             tick_count: calculated_state.tick_count,
-            proof_of_work: calculated_state.proof_of_work,
+            proof_of_work_list: calculated_state.proof_of_work_list.clone(),
         }
     }
 }
 
 struct WrappedState {
     current: Mutex<SharedState>,
-}
-
-fn tick_state(current: &CalculatedState) -> CalculatedState {
-    CalculatedState {
-        tick_count: current.tick_count + 1,
-        proof_of_work: calculate_proof_of_work(10, 10_000),
-    }
 }
 
 #[get("/")]
@@ -91,7 +94,7 @@ async fn main() -> std::io::Result<()> {
         let mut calculated_state = CalculatedState::new();
         loop {
             let begin = time::Instant::now();
-            calculated_state = tick_state(&calculated_state);
+            calculated_state.tick();
 
             // grap the lock, swap the shared state, release the lock when current goes out of scope
             {

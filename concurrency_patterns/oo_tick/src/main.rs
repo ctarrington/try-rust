@@ -1,4 +1,6 @@
-use std::{cmp, thread, time};
+use std::{cmp, thread, };
+use std::ops::DerefMut;
+use std::sync::{Arc, Mutex};
 
 /// make slices for the elements, the slices may be slightly different sizes and for small
 /// elements sizes the last slice may not be created
@@ -39,9 +41,35 @@ impl Thing {
 
 fn main() {
     println!("Hello, world!!");
-    let mut thing = Thing::new();
-    thing.tick();
-    println!("thing: {:?}", thing);
+    let thing1_for_thread = Arc::new(Mutex::new(Thing::new()));
+    let thing1 = thing1_for_thread.clone();
+    println!("before thing1 {:?}", thing1);
+
+    let thing2_for_thread = Arc::new(Mutex::new(Thing::new()));
+    let thing2 = thing2_for_thread.clone();
+    println!("before thing2 {:?}", thing2);
+
+    let mut handles = Vec::new();
+    handles.push(thread::spawn(move || {
+        let thing = &mut thing1_for_thread.lock().expect("unable to get the lock on the thing");
+        let thing = thing.deref_mut();
+        thing.tick();
+    })
+    );
+
+    handles.push(thread::spawn(move || {
+        let thing = &mut thing2_for_thread.lock().expect("unable to get the lock on the thing");
+        let thing = thing.deref_mut();
+        thing.tick();
+    })
+    );
+
+    for handle in handles {
+        handle.join().expect("unable to join thing tick handle");
+    }
+    println!("after thing1 {:?}", thing1);
+    println!("after thing2 {:?}", thing2);
+
 
     let things: Vec<Thing> = (0..20).map(|_| Thing::new()).collect();
     let slices = calculate_execution_slices(&things, 3);

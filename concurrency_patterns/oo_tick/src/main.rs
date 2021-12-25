@@ -1,27 +1,5 @@
-use std::{cmp, thread, };
 use std::sync::{Arc, Mutex};
-
-/// make slices for the elements, the slices may be slightly different sizes and for small
-/// elements sizes the last slice may not be created
-fn calculate_execution_slices<'a, T>(elements: &'a Vec<T>, thread_count: usize) -> Vec<&'a [T]> {
-    let mut execution_slices = Vec::new();
-
-    let stop = elements.len() - 1;
-    let raw_stride = (elements.len() as f32) / thread_count as f32;
-    let stride = raw_stride.ceil() as usize + 1;
-
-    let mut start_index = 0;
-    for _ in 0..thread_count {
-        let stop_index = start_index + stride - 1;
-        let stop_index = cmp::min(stop_index, stop);
-        let slice = &elements[start_index..=stop_index];
-        if slice.len() > 0 {
-            execution_slices.push(slice);
-        }
-        start_index += stride;
-    }
-    execution_slices
-}
+use std::{cmp, thread};
 
 #[derive(Debug)]
 struct Thing {
@@ -38,26 +16,57 @@ impl Thing {
     }
 }
 
+/// make slices for the elements, the slices may be slightly different sizes and for small
+/// elements sizes the last slice may not be created
+fn calculate_execution_slices<T>(
+    elements: &Vec<Arc<Mutex<T>>>,
+    thread_count: usize,
+) -> Vec<(usize, usize)> {
+    let mut execution_slices = Vec::new();
+
+    let stop = elements.len() - 1;
+    let raw_stride = (elements.len() as f32) / thread_count as f32;
+    let stride = raw_stride.ceil() as usize + 1;
+
+    let mut start_index = 0;
+    for _ in 0..thread_count {
+        let stop_index = start_index + stride - 1;
+        let stop_index = cmp::min(stop_index, stop);
+        if stop_index >= start_index {
+            execution_slices.push((start_index, stop_index));
+        }
+        start_index += stride;
+    }
+    execution_slices
+}
+
 fn main() {
-    let things_for_thread = Arc::new(vec![Mutex::new(Thing::new()), Mutex::new(Thing::new())]);
-    let things = things_for_thread.clone();
-    println!("before things {:?}", things);
+    let things: Vec<Arc<Mutex<Thing>>> = (0..10)
+        .map(|_| Arc::new(Mutex::new(Thing::new())))
+        .collect();
+    let blocks = calculate_execution_slices(&things, 3);
+    println!("blocks: {:?} ", blocks);
 
     let mut handles = Vec::new();
-    handles.push(thread::spawn(move || {
-        for thing in things_for_thread.iter() {
-            thing.lock().expect("unable to unlock thing").tick();
-        }
-    })
-    );
+    let things = Arc::new(things);
+
+    blocks.iter().for_each(|block| {
+        let (start_index, stop_index) = block;
+        let start_index = *start_index;
+        let stop_index = *stop_index;
+        let things_for_threads = things.clone();
+
+        handles.push(thread::spawn(move || {
+            let slice_of_things = &things_for_threads[start_index..=stop_index];
+            for thing in slice_of_things.iter() {
+                thing.lock().expect("unable to lock thing").tick();
+            }
+        }));
+    });
 
     for handle in handles {
-        handle.join().expect("unable to join thing tick handle");
+        handle.join().expect("unable to join tick handle");
     }
+
     println!("after things {:?}", things);
-
-
-//    let things: Vec<Thing> = (0..20).map(|_| Thing::new()).collect();
-//   let slices = calculate_execution_slices(&things, 3);
-//  println!("slices: {:?} ", slices);
 }

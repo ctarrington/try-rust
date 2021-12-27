@@ -1,25 +1,47 @@
+use rand::Rng;
 use std::sync::{Arc, Mutex};
-use std::{cmp, thread};
+use std::time::Duration;
+use std::{cmp, thread, time};
+
+/// simplistic proof of work scheme to introduce a little variability how long a process takes
+/// picks a random number until it is at or below a target
+fn calculate_proof_of_work(target: u32, range_max: u32) -> (u32, Duration) {
+    let mut rng = rand::thread_rng();
+
+    let begin = time::Instant::now();
+    let found = loop {
+        let value: u32 = rng.gen_range(0..range_max);
+        if value <= target {
+            break value;
+        }
+    };
+    let elapsed = time::Instant::now() - begin;
+
+    (found, elapsed)
+}
 
 #[derive(Debug)]
 struct Thing {
-    value: u32,
+    proof: (u32, Duration),
 }
 
 impl Thing {
     fn new() -> Self {
-        Thing { value: 0 }
+        Thing {
+            proof: (0, Duration::from_secs(0)),
+        }
     }
 
     fn tick(&mut self) {
-        self.value += 1;
+        let (value, elapsed) = calculate_proof_of_work(10, 10_000);
+        self.proof = (self.proof.0 + value, self.proof.1 + elapsed);
     }
 }
 
 /// make blocks for the elements, they may be slightly different sizes and for small
 /// sizes the last block may not be created
 fn calculate_execution_blocks(size: usize, thread_count: usize) -> Vec<(usize, usize)> {
-    let mut execution_blocks = Vec::new();
+    let mut execution_blocks = vec![];
 
     let stop = size - 1;
     let raw_stride = (size as f32) / thread_count as f32;
@@ -38,17 +60,14 @@ fn calculate_execution_blocks(size: usize, thread_count: usize) -> Vec<(usize, u
 }
 
 fn main() {
-    let things: Vec<Arc<Mutex<Thing>>> = (0..10)
-        .map(|_| Arc::new(Mutex::new(Thing::new())))
-        .collect();
+    let things: Vec<Mutex<Thing>> = (0..10).map(|_| Mutex::new(Thing::new())).collect();
+    let things = Arc::new(things);
 
     println!("before things {:?}", things);
     let blocks = calculate_execution_blocks(things.len(), 3);
     println!("blocks: {:?} ", blocks);
 
-    let mut handles = Vec::new();
-    let things = Arc::new(things);
-
+    let mut handles = vec![];
     blocks.iter().for_each(|block| {
         let (start_index, stop_index) = (block.0, block.1);
         let things_for_threads = things.clone();

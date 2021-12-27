@@ -59,12 +59,11 @@ fn calculate_execution_blocks(size: usize, thread_count: usize) -> Vec<(usize, u
     execution_blocks
 }
 
-fn main() {
-    let things: Vec<Mutex<Thing>> = (0..10).map(|_| Mutex::new(Thing::new())).collect();
+fn tick_concurrent(count: usize) {
+    let things: Vec<Mutex<Thing>> = (0..count).map(|_| Mutex::new(Thing::new())).collect();
     let things = Arc::new(things);
 
-    println!("before things {:?}", things);
-    let blocks = calculate_execution_blocks(things.len(), 3);
+    let blocks = calculate_execution_blocks(things.len(), 4);
     println!("blocks: {:?} ", blocks);
 
     let mut handles = vec![];
@@ -83,6 +82,26 @@ fn main() {
     for handle in handles {
         handle.join().expect("unable to join tick handle");
     }
+}
 
-    println!("\nafter things {:?}", things);
+fn main() {
+    let thing_count = 10_000;
+
+    let begin = time::Instant::now();
+    tick_concurrent(thing_count);
+    let elapsed_concurrent = time::Instant::now() - begin;
+    println!("concurrent: {:?}", elapsed_concurrent);
+
+    let begin = time::Instant::now();
+    let things: Vec<Thing> = (0..thing_count).map(|_| Thing::new()).collect();
+    for mut thing in things {
+        thing.tick();
+    }
+    let elapsed_single = time::Instant::now() - begin;
+
+    let ratio = elapsed_single.as_micros() as f32 / elapsed_concurrent.as_micros() as f32;
+    println!(
+        "single: {:?}, concurrent: {:?}, ratio: {}",
+        elapsed_single, elapsed_concurrent, ratio
+    );
 }

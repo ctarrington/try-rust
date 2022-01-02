@@ -82,6 +82,28 @@ fn tick_concurrent(count: usize) {
     for handle in handles {
         handle.join().expect("unable to join tick handle");
     }
+
+    println!("thing 0 is {:?}", things.get(0));
+
+    let sum: u32 = things
+        .iter()
+        .map(|thing| thing.lock().expect("unable to lock thing").proof.0)
+        .sum();
+    let average = sum as f32 / things.len() as f32;
+    println!("sum: {}, average: {}", sum, average);
+}
+
+fn tick_single(count: usize) {
+    let mut things: Vec<Thing> = (0..count).map(|_| Thing::new()).collect();
+    for thing in &mut things {
+        thing.tick();
+    }
+
+    let sum: u32 = things.iter().map(|thing| thing.proof.0).sum();
+    let average = sum as f32 / things.len() as f32;
+    println!("sum: {}, average: {}", sum, average);
+
+    println!("thing 0 is {:?}", things.get(0));
 }
 
 fn main() {
@@ -93,10 +115,7 @@ fn main() {
     println!("concurrent: {:?}", elapsed_concurrent);
 
     let begin = time::Instant::now();
-    let things: Vec<Thing> = (0..thing_count).map(|_| Thing::new()).collect();
-    for mut thing in things {
-        thing.tick();
-    }
+    tick_single(thing_count);
     let elapsed_single = time::Instant::now() - begin;
 
     let ratio = elapsed_single.as_micros() as f32 / elapsed_concurrent.as_micros() as f32;

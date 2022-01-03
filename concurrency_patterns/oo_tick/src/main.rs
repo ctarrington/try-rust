@@ -1,5 +1,6 @@
 use rand::Rng;
-use std::sync::{Arc, Mutex};
+use std::ops::{Deref, DerefMut};
+use std::sync::{mpsc, Arc, Mutex};
 use std::time::Duration;
 use std::{cmp, thread, time};
 
@@ -109,6 +110,7 @@ fn tick_single(count: usize) {
 fn main() {
     let thing_count = 10_000;
 
+    /*
     let begin = time::Instant::now();
     tick_concurrent(thing_count);
     let elapsed_concurrent = time::Instant::now() - begin;
@@ -122,5 +124,41 @@ fn main() {
     println!(
         "single: {:?}, concurrent: {:?}, ratio: {}",
         elapsed_single, elapsed_concurrent, ratio
+    );
+     */
+
+    let (sender, receiver) = mpsc::channel::<Thing>();
+
+    let creator_handler = thread::spawn(move || {
+        let things: Vec<Thing> = (0..10).map(|_| Thing::new()).collect();
+        for mut thing in things {
+            thing.tick();
+            if sender.send(thing).is_err() {
+                break;
+            }
+        }
+    });
+
+    let received_things: Vec<Thing> = vec![];
+    let received_things = Arc::new(Mutex::new(received_things));
+    let received_things_for_thread = received_things.clone();
+    let receiver_hander = thread::spawn(move || {
+        for thing in receiver {
+            println!("received thing {:?}", thing);
+            received_things_for_thread
+                .lock()
+                .expect("unable to lock the received things vector")
+                .push(thing);
+        }
+    });
+
+    creator_handler.join().expect("unable to join the creator");
+    receiver_hander.join().expect("unable to join the receiver");
+    println!(
+        "received things 0 is {:?}",
+        received_things
+            .lock()
+            .expect("unable to lock the received things vector")
+            .get(0)
     );
 }

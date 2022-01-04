@@ -60,11 +60,11 @@ fn calculate_execution_blocks(size: usize, thread_count: usize) -> Vec<(usize, u
     execution_blocks
 }
 
-fn tick_concurrent(count: usize) {
+fn tick_concurrent(count: usize, thread_count: usize) {
     let things: Vec<Mutex<Thing>> = (0..count).map(|_| Mutex::new(Thing::new())).collect();
     let things = Arc::new(things);
 
-    let blocks = calculate_execution_blocks(things.len(), 4);
+    let blocks = calculate_execution_blocks(things.len(), thread_count);
     println!("blocks: {:?} ", blocks);
 
     let mut handles = vec![];
@@ -84,7 +84,11 @@ fn tick_concurrent(count: usize) {
         handle.join().expect("unable to join tick handle");
     }
 
-    println!("thing 0 is {:?}", things.get(0));
+    println!(
+        "\nconcurrent thing 0 is {:?} len: {}",
+        things.get(0),
+        things.len()
+    );
 
     let sum: u32 = things
         .iter()
@@ -100,65 +104,91 @@ fn tick_single(count: usize) {
         thing.tick();
     }
 
+    println!(
+        "\nsingle thing 0 is {:?} len: {}",
+        things.get(0),
+        things.len()
+    );
+
     let sum: u32 = things.iter().map(|thing| thing.proof.0).sum();
     let average = sum as f32 / things.len() as f32;
     println!("sum: {}, average: {}", sum, average);
+}
 
-    println!("thing 0 is {:?}", things.get(0));
+fn tick_pipeline(count: usize, thread_count: usize) {
+    let (thing_sender, thing_receiver) = mpsc::channel::<Thing>();
+    let (collation_sender, collation_receiver) = mpsc::channel::<Vec<Thing>>();
+
+    let blocks = calculate_execution_blocks(count, thread_count);
+    for block in blocks {
+        let thing_sender = thing_sender.clone();
+        thread::spawn(move || {
+            let things: Vec<Thing> = (block.0..=block.1).map(|_| Thing::new()).collect();
+            for mut thing in things {
+                thing.tick();
+                if thing_sender.send(thing).is_err() {
+                    break;
+                }
+            }
+        });
+    }
+
+    let collation_handler = thread::spawn(move || {
+        let mut received_things: Vec<Thing> = vec![];
+        for thing in thing_receiver {
+            received_things.push(thing);
+            if received_things.len() == count {
+                break;
+            }
+        }
+
+        collation_sender.send(received_things).unwrap();
+    });
+
+    let collated_things = collation_receiver
+        .recv()
+        .expect("unable to receive the collated things");
+    println!(
+        "\ncollated thing 0 is {:?} len: {}",
+        collated_things.get(0),
+        collated_things.len()
+    );
+
+    let sum: u32 = collated_things.iter().map(|thing| thing.proof.0).sum();
+    let average = sum as f32 / collated_things.len() as f32;
+    println!("sum: {}, average: {}", sum, average);
+
+    // note we only join on the final receiver thread
+    collation_handler
+        .join()
+        .expect("unable to join the collation handler");
 }
 
 fn main() {
     let thing_count = 10_000;
+    let thread_count = 4;
 
-    /*
     let begin = time::Instant::now();
-    tick_concurrent(thing_count);
+    tick_concurrent(thing_count, thread_count);
     let elapsed_concurrent = time::Instant::now() - begin;
-    println!("concurrent: {:?}", elapsed_concurrent);
 
     let begin = time::Instant::now();
     tick_single(thing_count);
     let elapsed_single = time::Instant::now() - begin;
+
+    let begin = time::Instant::now();
+    tick_pipeline(thing_count, thread_count);
+    let elapsed_pipeline = time::Instant::now() - begin;
 
     let ratio = elapsed_single.as_micros() as f32 / elapsed_concurrent.as_micros() as f32;
     println!(
         "single: {:?}, concurrent: {:?}, ratio: {}",
         elapsed_single, elapsed_concurrent, ratio
     );
-     */
 
-    let (sender, receiver) = mpsc::channel::<Thing>();
-
-    let creator_handler = thread::spawn(move || {
-        let things: Vec<Thing> = (0..10).map(|_| Thing::new()).collect();
-        for mut thing in things {
-            thing.tick();
-            if sender.send(thing).is_err() {
-                break;
-            }
-        }
-    });
-
-    let received_things: Vec<Thing> = vec![];
-    let received_things = Arc::new(Mutex::new(received_things));
-    let received_things_for_thread = received_things.clone();
-    let receiver_hander = thread::spawn(move || {
-        for thing in receiver {
-            println!("received thing {:?}", thing);
-            received_things_for_thread
-                .lock()
-                .expect("unable to lock the received things vector")
-                .push(thing);
-        }
-    });
-
-    creator_handler.join().expect("unable to join the creator");
-    receiver_hander.join().expect("unable to join the receiver");
+    let ratio = elapsed_single.as_micros() as f32 / elapsed_pipeline.as_micros() as f32;
     println!(
-        "received things 0 is {:?}",
-        received_things
-            .lock()
-            .expect("unable to lock the received things vector")
-            .get(0)
+        "single: {:?}, pipeline: {:?}, ratio: {}",
+        elapsed_single, elapsed_pipeline, ratio
     );
 }

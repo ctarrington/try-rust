@@ -1,5 +1,4 @@
 use rand::Rng;
-use std::ops::{Deref, DerefMut};
 use std::sync::{mpsc, Arc, Mutex};
 use std::time::Duration;
 use std::{cmp, thread, time};
@@ -120,15 +119,13 @@ fn tick_pipeline(count: usize, thread_count: usize) {
     let (collation_sender, collation_receiver) = mpsc::channel::<Vec<Thing>>();
 
     let blocks = calculate_execution_blocks(count, thread_count);
-    for block in blocks {
+    for (start, stop) in blocks {
         let thing_sender = thing_sender.clone();
         thread::spawn(move || {
-            let things: Vec<Thing> = (block.0..=block.1).map(|_| Thing::new()).collect();
+            let things: Vec<Thing> = (start..=stop).map(|_| Thing::new()).collect();
             for mut thing in things {
                 thing.tick();
-                if thing_sender.send(thing).is_err() {
-                    break;
-                }
+                thing_sender.send(thing).expect("error sending a thing");
             }
         });
     }
@@ -165,7 +162,7 @@ fn tick_pipeline(count: usize, thread_count: usize) {
 }
 
 fn main() {
-    let thing_count = 10_000;
+    let thing_count = 100_000;
     let thread_count = 4;
 
     let begin = time::Instant::now();
@@ -180,15 +177,11 @@ fn main() {
     tick_pipeline(thing_count, thread_count);
     let elapsed_pipeline = time::Instant::now() - begin;
 
+    println!("\nsingle: {:?}", elapsed_single);
+
     let ratio = elapsed_single.as_micros() as f32 / elapsed_concurrent.as_micros() as f32;
-    println!(
-        "single: {:?}, concurrent: {:?}, ratio: {}",
-        elapsed_single, elapsed_concurrent, ratio
-    );
+    println!("concurrent: {:?}, ratio: {}", elapsed_concurrent, ratio);
 
     let ratio = elapsed_single.as_micros() as f32 / elapsed_pipeline.as_micros() as f32;
-    println!(
-        "single: {:?}, pipeline: {:?}, ratio: {}",
-        elapsed_single, elapsed_pipeline, ratio
-    );
+    println!("pipeline: {:?}, ratio: {}", elapsed_pipeline, ratio);
 }

@@ -50,7 +50,7 @@ impl Process {
 
         // these messages are cheap to copy so don't bother with Arcs
         if let Some(message) = self.send_value {
-            self.sender.send(message);
+            self.sender.send(message).expect("unable to send message");
         }
 
         let received = self.receiver.recv_timeout(self.round_duration / 2);
@@ -87,9 +87,9 @@ fn main() {
     let (sender_2, receiver_3) = mpsc::channel::<Message>();
     let (sender_3, receiver_1) = mpsc::channel::<Message>();
 
-    let mut process_1 = Process::new(1, sender_1, receiver_1, interval);
-    let mut process_2 = Process::new(2, sender_2, receiver_2, interval);
-    let mut process_3 = Process::new(3, sender_3, receiver_3, interval);
+    let process_1 = Process::new(1, sender_1, receiver_1, interval);
+    let process_2 = Process::new(2, sender_2, receiver_2, interval);
+    let process_3 = Process::new(3, sender_3, receiver_3, interval);
 
     let process_list = vec![process_1, process_2, process_3];
     let epoch = Instant::now();

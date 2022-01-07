@@ -1,12 +1,12 @@
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
-use std::time::{Duration, Instant, SystemTime};
+use std::time::{Duration, Instant};
 
 #[derive(Debug, Clone, Copy)]
 enum Message {
-    UID { value: u32 },
-    CORONATION { uid: u32 },
+    UID { value: usize },
+    CORONATION { uid: usize },
 }
 
 #[derive(Debug)]
@@ -18,42 +18,32 @@ enum Status {
 
 #[derive(Debug)]
 struct Process {
-    uid: u32,
+    uid: usize,
     send_value: Option<Message>,
     status: Status,
     sender: Sender<Message>,
     receiver: Receiver<Message>,
-    last_update: SystemTime,
-    round_duration: Duration,
 }
 
 impl Process {
-    fn new(
-        uid: u32,
-        sender: Sender<Message>,
-        receiver: Receiver<Message>,
-        round_duration: Duration,
-    ) -> Self {
+    fn new(uid: usize, sender: Sender<Message>, receiver: Receiver<Message>) -> Self {
         Process {
             uid,
             send_value: Some(Message::UID { value: uid }),
             status: Status::UNKNOWN,
             sender,
             receiver,
-            round_duration,
-            last_update: SystemTime::now(),
         }
     }
 
-    fn round(&mut self) {
-        self.last_update = SystemTime::now();
-
+    fn round(&mut self, receive_timeout: Duration) {
         // these messages are cheap to copy so don't bother with Arcs
         if let Some(message) = self.send_value {
+            println!("uid: {}, sending: {:?}", self.uid, message);
             self.sender.send(message).expect("unable to send message");
         }
 
-        let received = self.receiver.recv_timeout(self.round_duration / 2);
+        let received = self.receiver.recv_timeout(receive_timeout);
         match received {
             Ok(Message::UID { value }) if value > self.uid => {
                 self.send_value = Some(Message::UID { value });
@@ -82,28 +72,48 @@ impl Process {
 }
 
 fn main() {
-    let interval = Duration::from_millis(1000);
-    let (sender_1, receiver_2) = mpsc::channel::<Message>();
-    let (sender_2, receiver_3) = mpsc::channel::<Message>();
-    let (sender_3, receiver_1) = mpsc::channel::<Message>();
+    let processor_count: usize = 5;
 
-    let process_1 = Process::new(1, sender_1, receiver_1, interval);
-    let process_2 = Process::new(2, sender_2, receiver_2, interval);
-    let process_3 = Process::new(3, sender_3, receiver_3, interval);
+    let mut senders = vec![];
+    let mut receivers = vec![];
+    for _ in 0..processor_count {
+        let (sender, receiver) = mpsc::channel::<Message>();
+        senders.push(sender);
+        receivers.push(receiver);
+    }
 
-    let process_list = vec![process_1, process_2, process_3];
+    // move the last receiver to the front of the line
+    // so senders 3 2 1 line up with
+    // receivers  1 3 2
+    let first_receiver = receivers.remove(0);
+    receivers.push(first_receiver);
+
+    // reverse so it goes in clockwise direction
+    let mut senders = senders.into_iter().rev();
+    let mut receivers = receivers.into_iter().rev();
+
+    // make a process list from the pairs of senders and receivers
+    let mut process_list = vec![];
+    for index in 0..processor_count {
+        let sender = senders.next().expect("unable to get next sender");
+        let receiver = receivers.next().expect("unable to get next receiver");
+        process_list.push(Process::new(index, sender, receiver))
+    }
+
+    // We want the rounds to be in lock step for this scenario so we give each process half of the
+    // interval to catch a message and let it sleep the balance
+    // Each round has a target end time based on the epoch and the interval and the round counter
     let epoch = Instant::now();
+    let interval = Duration::from_millis(1000);
 
     let mut handles = vec![];
-
     for mut process in process_list {
         let handle = thread::spawn(move || {
-            let mut round = 0;
+            let mut round_counter = 0;
             loop {
-                process.round();
-                round += 1;
-                let duration = epoch + round * interval - Instant::now();
-                println!("duration: {:?}", duration);
+                process.round(interval / 2);
+                round_counter += 1;
+                let duration = epoch + round_counter * interval - Instant::now();
                 thread::sleep(duration);
             }
         });

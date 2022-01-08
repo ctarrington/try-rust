@@ -1,3 +1,4 @@
+use itertools::izip;
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
@@ -89,14 +90,12 @@ fn main() {
     receivers.push(first_receiver);
 
     // reverse so it goes in clockwise direction
-    let mut senders = senders.into_iter().rev();
-    let mut receivers = receivers.into_iter().rev();
+    let senders = senders.into_iter().rev();
+    let receivers = receivers.into_iter().rev();
 
     // make a process list from the pairs of senders and receivers
     let mut process_list = vec![];
-    for index in 0..processor_count {
-        let sender = senders.next().expect("unable to get next sender");
-        let receiver = receivers.next().expect("unable to get next receiver");
+    for (index, (sender, receiver)) in izip!(senders, receivers).enumerate() {
         process_list.push(Process::new(index, sender, receiver))
     }
 

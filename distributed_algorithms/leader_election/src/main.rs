@@ -3,11 +3,12 @@ use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
 use std::time::{Duration, Instant};
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Copy)]
 enum Message {
-    UID { value: usize },
-    CORONATION { uid: usize },
+    UID { value: Uuid },
+    CORONATION { uid: Uuid },
 }
 
 #[derive(Debug)]
@@ -19,7 +20,7 @@ enum Status {
 
 #[derive(Debug)]
 struct Process {
-    uid: usize,
+    uid: Uuid,
     send_value: Option<Message>,
     status: Status,
     sender: Sender<Message>,
@@ -27,7 +28,7 @@ struct Process {
 }
 
 impl Process {
-    fn new(uid: usize, sender: Sender<Message>, receiver: Receiver<Message>) -> Self {
+    fn new(uid: Uuid, sender: Sender<Message>, receiver: Receiver<Message>) -> Self {
         Process {
             uid,
             send_value: Some(Message::UID { value: uid }),
@@ -75,6 +76,8 @@ impl Process {
 fn main() {
     let processor_count: usize = 5;
 
+    let uuids = (0..processor_count).map(|_| Uuid::new_v4());
+
     let mut senders = vec![];
     let mut receivers = vec![];
     for _ in 0..processor_count {
@@ -93,11 +96,9 @@ fn main() {
     let senders = senders.into_iter().rev();
     let receivers = receivers.into_iter().rev();
 
-    // make a process list from the pairs of senders and receivers
-    let mut process_list = vec![];
-    for (index, (sender, receiver)) in izip!(senders, receivers).enumerate() {
-        process_list.push(Process::new(index, sender, receiver))
-    }
+    // make a process list from the tuples of uuids, senders and receivers
+    let process_list = izip!(uuids, senders, receivers)
+        .map(|(uuid, sender, receiver)| Process::new(uuid, sender, receiver));
 
     // We want the rounds to be in lock step for this scenario so we give each process half of the
     // interval to catch a message and let it sleep the balance

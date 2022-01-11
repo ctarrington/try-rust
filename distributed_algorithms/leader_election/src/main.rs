@@ -2,6 +2,7 @@ use itertools::izip;
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
+use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
 use uuid::Uuid;
 
@@ -106,22 +107,23 @@ fn main() {
     let epoch = Instant::now();
     let interval = Duration::from_millis(1000);
 
-    let mut handles = vec![];
-    for mut process in process_list {
-        let handle = thread::spawn(move || {
-            let mut round_counter = 0;
-            loop {
-                process.round(interval / 2);
-                round_counter += 1;
-                let duration = epoch + round_counter * interval - Instant::now();
-                thread::sleep(duration);
-            }
-        });
+    let handles: Vec<JoinHandle<Process>> = process_list
+        .map(|mut process| {
+            thread::spawn(move || {
+                let mut round_counter = 0;
+                loop {
+                    process.round(interval / 2);
+                    round_counter += 1;
+                    let duration = epoch + round_counter * interval - Instant::now();
+                    thread::sleep(duration);
+                }
+            })
+        })
+        .collect();
 
-        handles.push(handle);
-    }
-
+    println!("about to join handles");
     for handle in handles {
+        println!("joining handle");
         handle.join().expect("unable to join handle");
     }
 }

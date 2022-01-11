@@ -121,9 +121,7 @@ fn main() {
         })
         .collect();
 
-    println!("about to join handles");
     for handle in handles {
-        println!("joining handle");
         handle.join().expect("unable to join handle");
     }
 }

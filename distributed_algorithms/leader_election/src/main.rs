@@ -1,6 +1,5 @@
 use itertools::izip;
 use std::sync::mpsc;
-use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
 use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
@@ -23,49 +22,40 @@ enum Status {
 struct Process {
     uid: Uuid,
     send_value: Option<Message>,
+    input_value: Option<Message>,
     status: Status,
-    sender: Sender<Message>,
-    receiver: Receiver<Message>,
 }
 
 impl Process {
-    fn new(uid: Uuid, sender: Sender<Message>, receiver: Receiver<Message>) -> Self {
+    fn new(uid: Uuid) -> Self {
         Process {
             uid,
             send_value: Some(Message::UID { value: uid }),
+            input_value: None,
             status: Status::UNKNOWN,
-            sender,
-            receiver,
         }
     }
 
-    fn round(&mut self, receive_timeout: Duration) {
-        // these messages are cheap to copy so don't bother with Arcs
-        if let Some(message) = self.send_value {
-            println!("uid: {}, sending: {:?}", self.uid, message);
-            self.sender.send(message).expect("unable to send message");
-        }
-
-        let received = self.receiver.recv_timeout(receive_timeout);
-        match received {
-            Ok(Message::UID { value }) if value > self.uid => {
+    fn round(&mut self) {
+        match self.input_value {
+            Some(Message::UID { value }) if value > self.uid => {
                 self.send_value = Some(Message::UID { value });
             }
-            Ok(Message::UID { value }) if value == self.uid => {
+            Some(Message::UID { value }) if value == self.uid => {
                 self.send_value = Some(Message::CORONATION { uid: self.uid });
                 self.status = Status::LEADER;
             }
-            Ok(Message::UID { value: _ }) => {
+            Some(Message::UID { value: _ }) => {
                 self.send_value = None;
             }
-            Ok(Message::CORONATION { uid }) if uid > self.uid => {
+            Some(Message::CORONATION { uid }) if uid > self.uid => {
                 self.status = Status::FOLLOWER;
                 self.send_value = Some(Message::CORONATION { uid: uid });
             }
-            Ok(Message::CORONATION { uid: _ }) => {
+            Some(Message::CORONATION { uid: _ }) => {
                 self.send_value = None;
             }
-            Err(_) => {
+            None => {
                 self.send_value = None;
             }
         }
@@ -98,8 +88,7 @@ fn main() {
     let receivers = receivers.into_iter().rev();
 
     // make a process list from the tuples of uuids, senders and receivers
-    let process_list = izip!(uuids, senders, receivers)
-        .map(|(uuid, sender, receiver)| Process::new(uuid, sender, receiver));
+    let process_inputs = izip!(uuids, senders, receivers);
 
     // We want the rounds to be in lock step for this scenario so we give each process half of the
     // interval to catch a message and let it sleep the balance
@@ -107,12 +96,32 @@ fn main() {
     let epoch = Instant::now();
     let interval = Duration::from_millis(1000);
 
-    let handles: Vec<JoinHandle<Process>> = process_list
-        .map(|mut process| {
+    let handles: Vec<JoinHandle<Process>> = process_inputs
+        .map(|input| {
             thread::spawn(move || {
+                let uuid: Uuid = input.0;
+                let sender = input.1;
+                let receiver = input.2;
+
+                let mut process = Process::new(uuid);
                 let mut round_counter = 0;
                 loop {
-                    process.round(interval / 2);
+                    // these messages are cheap to copy so don't bother with Arcs
+                    if let Some(message) = process.send_value {
+                        println!("uid: {}, sending: {:?}", process.uid, message);
+                        sender.send(message).expect("unable to send message");
+                    }
+
+                    let received = receiver.recv_timeout(interval / 2);
+                    match received {
+                        Ok(message) => {
+                            process.input_value = Some(message);
+                        }
+                        Err(_) => {
+                            process.input_value = None;
+                        }
+                    }
+                    process.round();
                     round_counter += 1;
                     let duration = epoch + round_counter * interval - Instant::now();
                     thread::sleep(duration);

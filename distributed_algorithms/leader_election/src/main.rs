@@ -7,8 +7,8 @@ use uuid::Uuid;
 
 #[derive(Debug, Clone, Copy)]
 enum Message {
-    UID { value: Uuid },
-    CORONATION { uid: Uuid },
+    UID(Uuid),
+    CORONATION(Uuid),
 }
 
 #[derive(Debug)]
@@ -30,7 +30,7 @@ impl Process {
     fn new(uid: Uuid) -> Self {
         Process {
             uid,
-            send_value: Some(Message::UID { value: uid }),
+            send_value: Some(Message::UID(uid)),
             input_value: None,
             status: Status::UNKNOWN,
         }
@@ -38,21 +38,21 @@ impl Process {
 
     fn round(&mut self) {
         match self.input_value {
-            Some(Message::UID { value }) if value > self.uid => {
-                self.send_value = Some(Message::UID { value });
+            Some(Message::UID(value)) if value > self.uid => {
+                self.send_value = Some(Message::UID(value));
             }
-            Some(Message::UID { value }) if value == self.uid => {
-                self.send_value = Some(Message::CORONATION { uid: self.uid });
+            Some(Message::UID(value)) if value == self.uid => {
+                self.send_value = Some(Message::CORONATION(self.uid));
                 self.status = Status::LEADER;
             }
-            Some(Message::UID { value: _ }) => {
+            Some(Message::UID(_)) => {
                 self.send_value = None;
             }
-            Some(Message::CORONATION { uid }) if uid > self.uid => {
+            Some(Message::CORONATION(uid)) if uid > self.uid => {
                 self.status = Status::FOLLOWER;
-                self.send_value = Some(Message::CORONATION { uid: uid });
+                self.send_value = Some(Message::CORONATION(uid));
             }
-            Some(Message::CORONATION { uid: _ }) => {
+            Some(Message::CORONATION(_)) => {
                 self.send_value = None;
             }
             None => {
@@ -97,12 +97,8 @@ fn main() {
     let interval = Duration::from_millis(1000);
 
     let handles: Vec<JoinHandle<Process>> = process_inputs
-        .map(|input| {
+        .map(|(uuid, sender, receiver)| {
             thread::spawn(move || {
-                let uuid: Uuid = input.0;
-                let sender = input.1;
-                let receiver = input.2;
-
                 let mut process = Process::new(uuid);
                 let mut round_counter = 0;
                 loop {

@@ -40,27 +40,29 @@ impl Process {
 
     fn round(&mut self) {
         match self.input_value {
-            Some(Message::UID(value)) if value > self.uid => {
-                self.send_value = Some(Message::UID(value));
+            Some(Message::UID(uid)) => {
+                if uid > self.uid {
+                    self.send_value = Some(Message::UID(uid));
+                } else if uid == self.uid {
+                    self.send_value = Some(Message::CORONATION(self.uid));
+                    self.status = Status::LEADER;
+                } else {
+                    self.send_value = None;
+                }
             }
-            Some(Message::UID(value)) if value == self.uid => {
-                self.send_value = Some(Message::CORONATION(self.uid));
-                self.status = Status::LEADER;
+
+            Some(Message::CORONATION(uid)) => {
+                if uid > self.uid {
+                    self.status = Status::FOLLOWER(uid);
+                    self.send_value = Some(Message::CORONATION(uid));
+                } else if uid == self.uid {
+                    self.halted = true;
+                    self.send_value = None;
+                } else {
+                    self.send_value = None;
+                }
             }
-            Some(Message::UID(_)) => {
-                self.send_value = None;
-            }
-            Some(Message::CORONATION(uid)) if uid > self.uid => {
-                self.status = Status::FOLLOWER(uid);
-                self.send_value = Some(Message::CORONATION(uid));
-            }
-            Some(Message::CORONATION(uid)) if uid == self.uid => {
-                self.halted = true;
-                self.send_value = None;
-            }
-            Some(Message::CORONATION(_)) => {
-                self.send_value = None;
-            }
+
             None => {
                 self.send_value = None;
             }

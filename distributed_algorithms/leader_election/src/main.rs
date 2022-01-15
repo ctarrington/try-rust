@@ -1,5 +1,5 @@
 use itertools::izip;
-use std::sync::mpsc;
+use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
@@ -15,7 +15,7 @@ enum Message {
 enum Status {
     UNKNOWN,
     LEADER,
-    FOLLOWER,
+    FOLLOWER(Uuid),
 }
 
 #[derive(Debug)]
@@ -24,6 +24,7 @@ struct Process {
     send_value: Option<Message>,
     input_value: Option<Message>,
     status: Status,
+    halted: bool,
 }
 
 impl Process {
@@ -33,6 +34,7 @@ impl Process {
             send_value: Some(Message::UID(uid)),
             input_value: None,
             status: Status::UNKNOWN,
+            halted: false,
         }
     }
 
@@ -49,8 +51,12 @@ impl Process {
                 self.send_value = None;
             }
             Some(Message::CORONATION(uid)) if uid > self.uid => {
-                self.status = Status::FOLLOWER;
+                self.status = Status::FOLLOWER(uid);
                 self.send_value = Some(Message::CORONATION(uid));
+            }
+            Some(Message::CORONATION(uid)) if uid == self.uid => {
+                self.halted = true;
+                self.send_value = None;
             }
             Some(Message::CORONATION(_)) => {
                 self.send_value = None;
@@ -96,15 +102,17 @@ fn main() {
     let epoch = Instant::now();
     let interval = Duration::from_millis(1000);
 
+    let halted_original = Arc::new(Mutex::new(false));
+
     let handles: Vec<JoinHandle<Process>> = process_inputs
         .map(|(uuid, sender, receiver)| {
+            let halted = halted_original.clone();
             thread::spawn(move || {
                 let mut process = Process::new(uuid);
                 let mut round_counter = 0;
                 loop {
                     // these messages are cheap to copy so don't bother with Arcs
                     if let Some(message) = process.send_value {
-                        println!("uid: {}, sending: {:?}", process.uid, message);
                         sender.send(message).expect("unable to send message");
                     }
 
@@ -118,6 +126,15 @@ fn main() {
                         }
                     }
                     process.round();
+
+                    if process.halted {
+                        *halted.lock().unwrap() = true;
+                    }
+
+                    if *halted.lock().unwrap() {
+                        break process;
+                    }
+
                     round_counter += 1;
                     let duration = epoch + round_counter * interval - Instant::now();
                     thread::sleep(duration);

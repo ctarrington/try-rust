@@ -75,7 +75,10 @@ impl Process {
 fn main() {
     let processor_count: usize = 5;
 
-    let uuids = (0..processor_count).map(|_| Uuid::new_v4());
+    let uuids: Vec<Uuid> = (0..processor_count).map(|_| Uuid::new_v4()).collect();
+    let max_uuid = *uuids.clone().iter().max().expect("must be a max uuid");
+    println!("uuids: {:#?}", uuids);
+    println!("max_uuid: {:?}", max_uuid);
 
     let mut senders = vec![];
     let mut receivers = vec![];
@@ -102,7 +105,7 @@ fn main() {
     // interval to catch a message and let it sleep the balance
     // Each round has a target end time based on the epoch and the interval and the round counter
     let epoch = Instant::now();
-    let interval = Duration::from_millis(1000);
+    let interval = Duration::from_millis(500);
 
     let halted_original = Arc::new(Mutex::new(false));
 
@@ -134,6 +137,26 @@ fn main() {
                     }
 
                     if *halted.lock().unwrap() {
+                        match process.status {
+                            Status::LEADER => {
+                                assert_eq!(process.uid, max_uuid, "Leader should have the max uid");
+                            }
+                            Status::FOLLOWER(uid) => {
+                                assert_eq!(
+                                    uid, max_uuid,
+                                    "Follower should be following the max uid"
+                                );
+                                assert!(
+                                    process.uid < max_uuid,
+                                    "Follower should have a smaller uid"
+                                );
+                            }
+                            Status::UNKNOWN => {
+                                panic!("Process should be resolved by the halt");
+                            }
+                        }
+
+                        println!("\nat halt: {:?}", process);
                         break process;
                     }
 

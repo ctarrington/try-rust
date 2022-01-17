@@ -11,14 +11,14 @@ enum Message {
     CORONATION(Uuid),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum Status {
     UNKNOWN,
     LEADER,
     FOLLOWER(Uuid),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Process {
     uid: Uuid,
     send_value: Option<Message>,
@@ -68,7 +68,7 @@ impl Process {
             }
         }
 
-        println!("process: {:?}", self);
+        //println!("process: {:?}", self);
     }
 }
 
@@ -99,7 +99,7 @@ fn main() {
     let receivers = receivers.into_iter().rev();
 
     // make a process list from the tuples of uuids, senders and receivers
-    let process_inputs = izip!(uuids, senders, receivers);
+    let process_inputs = izip!(uuids.clone(), senders, receivers);
 
     // We want the rounds to be in lock step for this scenario so we give each process half of the
     // interval to catch a message and let it sleep the balance
@@ -170,5 +170,52 @@ fn main() {
 
     for handle in handles {
         handle.join().expect("unable to join handle");
+    }
+
+    println!("\n\n done threads \n\n");
+
+    let mut processes: Vec<Process> = uuids.iter().map(|uuid| Process::new(*uuid)).collect();
+
+    loop {
+        let mut index = 0;
+        let current_processes = processes.clone();
+        for destination in &mut processes {
+            let sender_index = if index == 0 {
+                processor_count - 1
+            } else {
+                index - 1
+            };
+            let sender = current_processes
+                .get(sender_index)
+                .expect("should be a sender");
+
+            destination.input_value = sender.send_value;
+
+            destination.round();
+
+            index += 1;
+        }
+
+        let halted_process = processes.iter().find(|process| process.halted);
+        if let Some(_) = halted_process {
+            break;
+        }
+    }
+
+    println!("after halt");
+    for process in &processes {
+        println!("process: {:?}", process);
+        match process.status {
+            Status::LEADER => {
+                assert_eq!(process.uid, max_uuid, "Leader should have the max uid");
+            }
+            Status::FOLLOWER(uid) => {
+                assert_eq!(uid, max_uuid, "Follower should be following the max uid");
+                assert!(process.uid < max_uuid, "Follower should have a smaller uid");
+            }
+            Status::UNKNOWN => {
+                panic!("Process should be resolved by the halt");
+            }
+        }
     }
 }

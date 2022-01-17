@@ -18,6 +18,48 @@ enum Status {
     FOLLOWER(Uuid),
 }
 
+#[derive(Debug)]
+struct Ring {
+    processes: Vec<Process>,
+    processor_count: usize,
+}
+
+impl Ring {
+    fn new(uuids: Vec<Uuid>) -> Self {
+        Ring {
+            processes: uuids.iter().map(|uuid| Process::new(*uuid)).collect(),
+            processor_count: uuids.len(),
+        }
+    }
+
+    fn is_halted(&self) -> bool {
+        match self.processes.iter().find(|process| process.halted) {
+            Some(_) => true,
+            None => false,
+        }
+    }
+
+    fn round(&mut self) {
+        let mut index = 0;
+        let current_processes = self.processes.clone();
+        for destination in &mut self.processes {
+            let sender_index = if index == 0 {
+                self.processor_count - 1
+            } else {
+                index - 1
+            };
+            let sender = current_processes
+                .get(sender_index)
+                .expect("should be a sender");
+
+            destination.input_value = sender.send_value;
+            destination.round();
+
+            index += 1;
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 struct Process {
     uid: Uuid,
@@ -217,5 +259,13 @@ fn main() {
                 panic!("Process should be resolved by the halt");
             }
         }
+    }
+
+    println!("about to do a round");
+    let mut ring = Ring::new(uuids);
+
+    while !ring.is_halted() {
+        ring.round();
+        println!("\nring: {:#?}", ring);
     }
 }

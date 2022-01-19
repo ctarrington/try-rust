@@ -58,8 +58,19 @@ impl Ring {
             index += 1;
         }
     }
+
+    fn is_valid_at_halt(&self, max_uuid: Uuid) -> bool {
+        self.processes
+            .iter()
+            .map(|process| process.is_valid_at_halt(max_uuid))
+            .all(|valid| valid)
+    }
 }
 
+/// Simple synchronous leader election scheme for a ring of processes
+/// More or less an implementation of the LCR algorithm as described in
+/// Destributed Algorithms by Nancy Lynch
+/// https://learning.oreilly.com/library/view/distributed-algorithms/9781558603486/OEBPS/B9781558603486500031.htm
 #[derive(Debug, Clone)]
 struct Process {
     uid: Uuid,
@@ -78,6 +89,23 @@ impl Process {
             status: Status::UNKNOWN,
             halted: false,
         }
+    }
+
+    fn is_valid_at_halt(&self, max_uuid: Uuid) -> bool {
+        match self.status {
+            Status::LEADER => {
+                assert_eq!(self.uid, max_uuid, "Leader should have the max uid");
+            }
+            Status::FOLLOWER(uid) => {
+                assert_eq!(uid, max_uuid, "Follower should be following the max uid");
+                assert!(self.uid < max_uuid, "Follower should have a smaller uid");
+            }
+            Status::UNKNOWN => {
+                panic!("Process should be resolved by the halt");
+            }
+        }
+
+        true
     }
 
     fn round(&mut self) {
@@ -109,8 +137,6 @@ impl Process {
                 self.send_value = None;
             }
         }
-
-        //println!("process: {:?}", self);
     }
 }
 
@@ -120,7 +146,6 @@ fn main() {
     let uuids: Vec<Uuid> = (0..processor_count).map(|_| Uuid::new_v4()).collect();
     let max_uuid = *uuids.clone().iter().max().expect("must be a max uuid");
     println!("uuids: {:#?}", uuids);
-    println!("max_uuid: {:?}", max_uuid);
 
     let mut senders = vec![];
     let mut receivers = vec![];
@@ -179,25 +204,7 @@ fn main() {
                     }
 
                     if *halted.lock().unwrap() {
-                        match process.status {
-                            Status::LEADER => {
-                                assert_eq!(process.uid, max_uuid, "Leader should have the max uid");
-                            }
-                            Status::FOLLOWER(uid) => {
-                                assert_eq!(
-                                    uid, max_uuid,
-                                    "Follower should be following the max uid"
-                                );
-                                assert!(
-                                    process.uid < max_uuid,
-                                    "Follower should have a smaller uid"
-                                );
-                            }
-                            Status::UNKNOWN => {
-                                panic!("Process should be resolved by the halt");
-                            }
-                        }
-
+                        process.is_valid_at_halt(max_uuid);
                         println!("\nat halt: {:?}", process);
                         break process;
                     }
@@ -215,57 +222,15 @@ fn main() {
     }
 
     println!("\n\n done threads \n\n");
+    println!("'\nabout to do rounds to halt");
 
-    let mut processes: Vec<Process> = uuids.iter().map(|uuid| Process::new(*uuid)).collect();
-
-    loop {
-        let mut index = 0;
-        let current_processes = processes.clone();
-        for destination in &mut processes {
-            let sender_index = if index == 0 {
-                processor_count - 1
-            } else {
-                index - 1
-            };
-            let sender = current_processes
-                .get(sender_index)
-                .expect("should be a sender");
-
-            destination.input_value = sender.send_value;
-
-            destination.round();
-
-            index += 1;
-        }
-
-        let halted_process = processes.iter().find(|process| process.halted);
-        if let Some(_) = halted_process {
-            break;
-        }
-    }
-
-    println!("after halt");
-    for process in &processes {
-        println!("process: {:?}", process);
-        match process.status {
-            Status::LEADER => {
-                assert_eq!(process.uid, max_uuid, "Leader should have the max uid");
-            }
-            Status::FOLLOWER(uid) => {
-                assert_eq!(uid, max_uuid, "Follower should be following the max uid");
-                assert!(process.uid < max_uuid, "Follower should have a smaller uid");
-            }
-            Status::UNKNOWN => {
-                panic!("Process should be resolved by the halt");
-            }
-        }
-    }
-
-    println!("about to do a round");
     let mut ring = Ring::new(uuids);
-
     while !ring.is_halted() {
         ring.round();
-        println!("\nring: {:#?}", ring);
     }
+
+    println!("\nfinal ring: {:?}", ring);
+    ring.is_valid_at_halt(max_uuid);
+
+    println!("\n\nDone");
 }

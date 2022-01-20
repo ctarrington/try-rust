@@ -1,4 +1,5 @@
 use itertools::izip;
+use std::rc::Rc;
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 use std::thread::JoinHandle;
@@ -25,9 +26,13 @@ struct Ring {
 }
 
 impl Ring {
-    fn new(uuids: Vec<Uuid>) -> Self {
+    fn new(uuids: Rc<Vec<Uuid>>) -> Self {
         Ring {
-            processes: uuids.iter().map(|uuid| Process::new(*uuid)).collect(),
+            processes: uuids
+                .to_vec()
+                .iter()
+                .map(|uuid| Process::new(*uuid))
+                .collect(),
             processor_count: uuids.len(),
         }
     }
@@ -143,8 +148,8 @@ impl Process {
 fn main() {
     let processor_count: usize = 5;
 
-    let uuids: Vec<Uuid> = (0..processor_count).map(|_| Uuid::new_v4()).collect();
-    let max_uuid = *uuids.clone().iter().max().expect("must be a max uuid");
+    let uuids: Rc<Vec<Uuid>> = Rc::new((0..processor_count).map(|_| Uuid::new_v4()).collect());
+    let max_uuid = *uuids.iter().max().expect("must be a max uuid");
     println!("uuids: {:#?}", uuids);
 
     let mut senders = vec![];
@@ -166,7 +171,7 @@ fn main() {
     let receivers = receivers.into_iter().rev();
 
     // make a process list from the tuples of uuids, senders and receivers
-    let process_inputs = izip!(uuids.clone(), senders, receivers);
+    let process_inputs = izip!(uuids.to_vec(), senders, receivers);
 
     // We want the rounds to be in lock step for this scenario so we give each process half of the
     // interval to catch a message and let it sleep the balance

@@ -4,6 +4,7 @@ use wasm_bindgen::prelude::*;
 pub struct Person {
     first_name: String,
     last_name: String,
+    coins: u32,
 }
 
 #[wasm_bindgen]
@@ -12,7 +13,20 @@ impl Person {
         Person {
             first_name,
             last_name,
+            coins: 0,
         }
+    }
+
+    pub fn first_name(&self) -> String {
+        self.first_name.clone()
+    }
+
+    pub fn coins(&self) -> u32 {
+        self.coins
+    }
+
+    pub fn tick(&mut self) {
+        self.coins = self.coins + 1;
     }
 }
 
@@ -29,6 +43,11 @@ pub fn greet_person(person: Person) -> String {
 #[wasm_bindgen]
 pub fn greet(name: String) -> String {
     format!("Hi, {}", name)
+}
+
+#[wasm_bindgen]
+pub fn get_joe() -> Person {
+    Person::new("Joe".to_string(), "Josephson".to_string())
 }
 
 #[wasm_bindgen]

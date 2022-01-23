@@ -1,6 +1,6 @@
 ## installation
-nvm use
-cargo install wasm-pack
+nvm use    
+cargo install wasm-pack    
 
 ## build rust
 cd wasm    

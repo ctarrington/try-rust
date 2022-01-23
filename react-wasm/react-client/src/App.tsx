@@ -1,24 +1,23 @@
-import React from 'react';
-import logo from './logo.svg';
+import React, { useState } from 'react';
 import './App.css';
 
 function App() {
+  import('wasm').then(({ Person, add_two_ints, greet, format_name}) => {
+    setSum(add_two_ints(10, 20));
+    setGreeting(greet('Rusty'));
+    setName(format_name(Person.new('Fred', 'Fredrickson')));
+
+  });
+
+  const [sum, setSum] = useState<number>(0);
+  const [greeting, setGreeting] = useState<string>('');
+  const [name, setName] = useState<string>('');
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className="App" >
+      <div>Sum Results: {sum}</div>
+      <div>Greeting: {greeting} </div>
+      <div>Name: {name} </div>
     </div>
   );
 }

@@ -1,31 +1,23 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useInterval } from "usehooks-ts";
 import "./App.css";
-
-function useInterval(callback: () => void, delay: number) {
-  const savedCallback = useRef(callback);
-
-  // Remember the latest callback.
-  useEffect(() => {
-    savedCallback.current = callback;
-  }, [callback]);
-
-  // Set up the interval.
-  useEffect(() => {
-    let id = setInterval(() => {
-      savedCallback.current();
-    }, delay);
-    return () => clearInterval(id);
-  }, [delay]);
-}
 
 function App() {
   useEffect(() => {
     import("wasm").then(
-      ({ Person, add_two_ints, get_joe, greet, format_name }) => {
+      ({
+        Person,
+        add_two_ints,
+        get_person,
+        get_numbers,
+        greet,
+        format_name,
+      }) => {
+        setNumbers(get_numbers(5));
         setSum(add_two_ints(10, 20));
         setGreeting(greet("Rusty"));
         setName(format_name(Person.new("Fred", "Fredrickson")));
-        const joe = get_joe();
+        const joe = get_person();
         joe.tick();
         setPersonName(joe.first_name());
         setPersonCoins(joe.coins());
@@ -34,6 +26,7 @@ function App() {
     );
   }, []);
 
+  const [numbers, setNumbers] = useState<Uint32Array>(Uint32Array.from([]));
   const [sum, setSum] = useState<number>(0);
   const [greeting, setGreeting] = useState<string>("");
   const [name, setName] = useState<string>("");
@@ -55,6 +48,7 @@ function App() {
       <div>Name: {name} </div>
       <div>Person Name: {personName} </div>
       <div>Person Coins: {personCoins} </div>
+      <div>Numbers: {numbers.join(",")}</div>
     </div>
   );
 }

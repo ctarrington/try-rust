@@ -46,8 +46,17 @@ pub fn greet(name: String) -> String {
 }
 
 #[wasm_bindgen]
-pub fn get_joe() -> Person {
+pub fn get_person() -> Person {
     Person::new("Joe".to_string(), "Josephson".to_string())
+}
+
+#[wasm_bindgen]
+pub fn get_numbers(count: usize) -> js_sys::Uint32Array {
+    let mut numbers = vec![];
+    for index in 0..count {
+        numbers.push(index as u32);
+    }
+    js_sys::Uint32Array::from(&numbers[..])
 }
 
 #[wasm_bindgen]

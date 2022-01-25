@@ -9,6 +9,7 @@ function App() {
         Person,
         add_two_ints,
         get_person,
+        get_people,
         get_numbers,
         greet,
         format_name,
@@ -22,6 +23,7 @@ function App() {
         setPersonName(joe.first_name());
         setPersonCoins(joe.coins());
         setPerson(joe);
+        setPeople(get_people(2));
       }
     );
   }, []);
@@ -33,6 +35,7 @@ function App() {
   const [personName, setPersonName] = useState<string>("");
   const [personCoins, setPersonCoins] = useState<number>(0);
   const [person, setPerson] = useState<any>(null);
+  const [people, setPeople] = useState<any>(null);
 
   useInterval(() => {
     if (person) {
@@ -49,6 +52,16 @@ function App() {
       <div>Person Name: {personName} </div>
       <div>Person Coins: {personCoins} </div>
       <div>Numbers: {numbers.join(",")}</div>
+      {people && (
+        <div>
+          People:{" "}
+          {people.map((person: any, index: number) => (
+            <span key={index}>
+              {person.first_name} {person.last_name} {person.coins},
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

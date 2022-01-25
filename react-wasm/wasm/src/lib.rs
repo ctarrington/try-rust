@@ -1,6 +1,8 @@
+use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
+#[derive(Serialize, Deserialize)]
 pub struct Person {
     first_name: String,
     last_name: String,
@@ -57,6 +59,20 @@ pub fn get_numbers(count: usize) -> js_sys::Uint32Array {
         numbers.push(index as u32);
     }
     js_sys::Uint32Array::from(&numbers[..])
+}
+
+#[wasm_bindgen]
+// as per https://rustwasm.github.io/wasm-bindgen/reference/arbitrary-data-with-serde.html
+pub fn get_people(count: usize) -> JsValue {
+    let mut people = vec![];
+    for index in 0..count {
+        people.push(Person {
+            first_name: "A".to_string(),
+            last_name: "B".to_string(),
+            coins: index as u32,
+        });
+    }
+    JsValue::from_serde(&people).unwrap()
 }
 
 #[wasm_bindgen]

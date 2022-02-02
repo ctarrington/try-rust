@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import PersonDetails from "./PersonDetails";
 import { useInterval } from "usehooks-ts";
 import "./App.css";
 
@@ -69,9 +70,7 @@ function App({ wasm }: AppProps) {
         <div>
           People:
           {people.map((person: any, index: number) => (
-            <span key={index}>
-              {person.first_name} {person.last_name} {person.coins},
-            </span>
+            <PersonDetails person={person} key={index} />
           ))}
         </div>
       )}

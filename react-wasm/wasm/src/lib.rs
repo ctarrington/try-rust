@@ -23,6 +23,10 @@ impl Person {
         self.first_name.clone()
     }
 
+    pub fn last_name(&self) -> String {
+        self.last_name.clone()
+    }
+
     pub fn coins(&self) -> u32 {
         self.coins
     }

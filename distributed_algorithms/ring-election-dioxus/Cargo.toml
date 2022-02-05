@@ -8,4 +8,10 @@ edition = "2021"
 [dependencies]
 dioxus = { version = "0.1.8", features = ["web"]}
 log = "0.4.14"
+rand = { version = "0.8.4", features = ["small_rng"] }
+getrandom = { version = "0.2", features = ["js"]}
+
 wasm-logger = "0.2.0"
+
+[lib]
+path = "src/lib.rs"

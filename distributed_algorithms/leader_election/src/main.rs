@@ -74,7 +74,7 @@ impl Ring {
 
 /// Simple synchronous leader election scheme for a ring of processes
 /// More or less an implementation of the LCR algorithm as described in
-/// Destributed Algorithms by Nancy Lynch
+/// Distributed Algorithms by Nancy Lynch
 /// https://learning.oreilly.com/library/view/distributed-algorithms/9781558603486/OEBPS/B9781558603486500031.htm
 #[derive(Debug, Clone)]
 struct Process {

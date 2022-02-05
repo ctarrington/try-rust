@@ -1,4 +1,5 @@
 use rand::random;
+use std::collections::HashSet;
 
 const PROCESS_COUNT: usize = 10;
 
@@ -117,6 +118,45 @@ fn create_uid() -> u32 {
 
 #[test]
 fn test_construction() {
-    let scenario = Scenario::new(3);
-    assert_eq!(scenario.processes[1].uid, 1);
+    const SIZE: usize = 3;
+    let scenario = Scenario::new(SIZE);
+    let mut unique_uids = HashSet::new();
+    for index in 0..SIZE {
+        unique_uids.insert(scenario.processes[index].uid);
+    }
+    assert_eq!(SIZE, unique_uids.len());
+}
+
+#[test]
+fn test_election() {
+    const SIZE: usize = 3;
+    let mut scenario = Scenario::new(SIZE);
+    let required_rounds = 2 * SIZE;
+    for index in 0..required_rounds {
+        scenario = scenario.tick();
+    }
+    let mut leaders: Vec<Process> = scenario
+        .processes
+        .clone()
+        .into_iter()
+        .filter(|process| matches!(process.status, Status::LEADER))
+        .collect();
+    assert_eq!(1, leaders.len());
+    assert!(leaders.get(0).unwrap().halted);
+
+    let leader_uid: u32 = leaders.get(0).unwrap().uid;
+    let followers: Vec<Process> = scenario
+        .processes
+        .clone()
+        .into_iter()
+        .filter(|process| {
+            let is_follower = if let Status::FOLLOWER(following) = process.status {
+                following == leader_uid
+            } else {
+                false
+            };
+            is_follower
+        })
+        .collect();
+    assert_eq!(SIZE - 1, followers.len());
 }

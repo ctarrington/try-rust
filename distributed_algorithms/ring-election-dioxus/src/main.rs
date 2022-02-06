@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use ring_election_dioxus::{Message, Process, Scenario, Status};
+use ring_election_dioxus::model::{Network, NetworkConnection, Scenario};
 
 fn main() {
     wasm_logger::init(wasm_logger::Config::new(log::Level::Trace));
@@ -8,14 +8,45 @@ fn main() {
 
 #[allow(non_snake_case)]
 fn App(cx: Scope) -> Element {
-    let (scenario, set_scenario) = use_state(&cx, || Scenario::new(3));
+    let (scenario, set_scenario) = use_state(&cx, || Scenario::new(3, Network::create_ring(3)));
     let on_scenario_tick = move |_| {
         let next = scenario.tick();
         set_scenario(next);
     };
 
     let process_list = (0..scenario.processor_count).map(|index| {
-        let process_summary = format!("{:?}", scenario.processes[index]);
+        let process = scenario.processes[index].clone();
+
+        let mut input_values_formatted = vec![];
+        let mut send_values_formatted = vec![];
+        for value_index in 0..scenario.processor_count {
+            let input_value_formatted: String =
+                if scenario.network.connections[value_index][index] == NetworkConnection::ALLOWED {
+                    format!("{:?}", process.input_values[value_index])
+                } else {
+                    "X".to_string()
+                };
+            input_values_formatted.push(input_value_formatted);
+
+            let send_value_formatted: String =
+                if scenario.network.connections[index][value_index] == NetworkConnection::ALLOWED {
+                    format!("{:?}", process.send_values[value_index])
+                } else {
+                    "X".to_string()
+                };
+            send_values_formatted.push(send_value_formatted);
+        }
+        let input_values_formatted = input_values_formatted.join(", ");
+        let send_values_formatted = send_values_formatted.join(", ");
+
+        let process_summary = format!(
+            "uid: {}, status: {:?}, halted: {:?}, inputs: [{}], sends: [{}]",
+            process.uid,
+            process.status,
+            process.halted,
+            input_values_formatted,
+            send_values_formatted,
+        );
 
         rsx! {
             div {
@@ -25,12 +56,26 @@ fn App(cx: Scope) -> Element {
         }
     });
 
-    let network_index = scenario.processes[0].network_index;
+    let network_list = (0..scenario.processor_count).map(|from| {
+        let row_summary: Vec<String> = (0..scenario.processor_count)
+            .map(|to| format!("{:?}", scenario.network.connections[from][to]))
+            .collect();
+        let row_summary = row_summary.join(",");
+
+        rsx! {
+            div {
+                key: "{from}",
+                "{row_summary}"
+            }
+        }
+    });
+
     cx.render(rsx! {
         div {
-            h1 {"Current Scenario network_index: {network_index}"}
-            process_list
+            h1 {"Current Scenario"}
             button { onclick: on_scenario_tick, "Scenario+"}
+            network_list
+            process_list
         }
     })
 }

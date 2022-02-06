@@ -20,20 +20,24 @@ fn App(cx: Scope) -> Element {
         let mut input_values_formatted = vec![];
         let mut send_values_formatted = vec![];
         for value_index in 0..scenario.processor_count {
-            let input_value_formatted: String =
-                if scenario.network.connections[value_index][index] == NetworkConnection::ALLOWED {
-                    format!("{:?}", process.input_values[value_index])
-                } else {
-                    "X".to_string()
-                };
+            let input_value_formatted: String = if scenario.network.get_connections()[value_index]
+                [index]
+                == NetworkConnection::ALLOWED
+            {
+                format!("{:?}", process.get_input_values()[value_index])
+            } else {
+                "X".to_string()
+            };
             input_values_formatted.push(input_value_formatted);
 
-            let send_value_formatted: String =
-                if scenario.network.connections[index][value_index] == NetworkConnection::ALLOWED {
-                    format!("{:?}", process.send_values[value_index])
-                } else {
-                    "X".to_string()
-                };
+            let send_value_formatted: String = if scenario.network.get_connections()[index]
+                [value_index]
+                == NetworkConnection::ALLOWED
+            {
+                format!("{:?}", process.get_send_values()[value_index])
+            } else {
+                "X".to_string()
+            };
             send_values_formatted.push(send_value_formatted);
         }
         let input_values_formatted = input_values_formatted.join(", ");
@@ -41,9 +45,9 @@ fn App(cx: Scope) -> Element {
 
         let process_summary = format!(
             "uid: {}, status: {:?}, halted: {:?}, inputs: [{}], sends: [{}]",
-            process.uid,
-            process.status,
-            process.halted,
+            process.get_uid(),
+            process.get_status(),
+            process.get_halted(),
             input_values_formatted,
             send_values_formatted,
         );
@@ -58,7 +62,7 @@ fn App(cx: Scope) -> Element {
 
     let network_list = (0..scenario.processor_count).map(|from| {
         let row_summary: Vec<String> = (0..scenario.processor_count)
-            .map(|to| format!("{:?}", scenario.network.connections[from][to]))
+            .map(|to| format!("{:?}", scenario.network.get_connections()[from][to]))
             .collect();
         let row_summary = row_summary.join(",");
 

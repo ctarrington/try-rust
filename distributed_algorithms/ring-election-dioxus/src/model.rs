@@ -8,7 +8,7 @@ pub enum Message {
     CORONATION(u32),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum Status {
     UNKNOWN,
     LEADER,
@@ -20,11 +20,11 @@ pub enum Status {
 /// https://learning.oreilly.com/library/view/distributed-algorithms/9781558603486/OEBPS/B9781558603486500031.htm
 #[derive(Debug, Clone)]
 pub struct Process {
-    pub uid: u32,
-    pub send_values: [Option<Message>; PROCESS_COUNT],
-    pub input_values: [Option<Message>; PROCESS_COUNT],
-    pub status: Status,
-    pub halted: bool,
+    uid: u32,
+    send_values: [Option<Message>; PROCESS_COUNT],
+    input_values: [Option<Message>; PROCESS_COUNT],
+    status: Status,
+    halted: bool,
 }
 
 #[derive(PartialEq, Debug, Clone, Copy)]
@@ -35,7 +35,7 @@ pub enum NetworkConnection {
 
 #[derive(Debug, Clone, Copy)]
 pub struct Network {
-    pub connections: [[NetworkConnection; PROCESS_COUNT]; PROCESS_COUNT],
+    connections: [[NetworkConnection; PROCESS_COUNT]; PROCESS_COUNT],
 }
 
 impl Network {
@@ -44,11 +44,14 @@ impl Network {
 
         for to in 0..size {
             let from = if to == 0 { size - 1 } else { to - 1 };
-
             connections[from][to] = NetworkConnection::ALLOWED;
         }
 
         Network { connections }
+    }
+
+    pub fn get_connections(&self) -> [[NetworkConnection; PROCESS_COUNT]; PROCESS_COUNT] {
+        self.connections
     }
 }
 
@@ -70,6 +73,26 @@ impl Process {
             status: Status::UNKNOWN,
             halted: false,
         }
+    }
+
+    pub fn get_uid(&self) -> u32 {
+        self.uid
+    }
+
+    pub fn get_send_values(&self) -> [Option<Message>; PROCESS_COUNT] {
+        self.send_values
+    }
+
+    pub fn get_input_values(&self) -> [Option<Message>; PROCESS_COUNT] {
+        self.input_values
+    }
+
+    pub fn get_status(&self) -> Status {
+        self.status
+    }
+
+    pub fn get_halted(&self) -> bool {
+        self.halted
     }
 
     fn tick(&mut self) {

@@ -19,21 +19,18 @@ fn App(cx: Scope) -> Element {
 
         let mut input_values_formatted = vec![];
         let mut send_values_formatted = vec![];
+
         for value_index in 0..scenario.processor_count {
-            let input_value_formatted: String = if scenario.network.get_connections()[value_index]
-                [index]
-                == NetworkConnection::ALLOWED
-            {
+            let connection = scenario.network.get_connections()[value_index][index];
+            let input_value_formatted: String = if connection == NetworkConnection::ALLOWED {
                 format!("{:?}", process.get_input_values()[value_index])
             } else {
                 "X".to_string()
             };
             input_values_formatted.push(input_value_formatted);
 
-            let send_value_formatted: String = if scenario.network.get_connections()[index]
-                [value_index]
-                == NetworkConnection::ALLOWED
-            {
+            let connection = scenario.network.get_connections()[index][value_index];
+            let send_value_formatted: String = if connection == NetworkConnection::ALLOWED {
                 format!("{:?}", process.get_send_values()[value_index])
             } else {
                 "X".to_string()

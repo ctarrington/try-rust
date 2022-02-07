@@ -21,6 +21,7 @@ pub enum Status {
 #[derive(Debug, Clone)]
 pub struct Process {
     uid: u32,
+    send_connections: [NetworkConnection; PROCESS_COUNT],
     send_values: [Option<Message>; PROCESS_COUNT],
     input_values: [Option<Message>; PROCESS_COUNT],
     status: Status,
@@ -53,6 +54,10 @@ impl Network {
     pub fn get_connections(&self) -> [[NetworkConnection; PROCESS_COUNT]; PROCESS_COUNT] {
         self.connections
     }
+
+    pub fn get_connections_from(&self, from_index: usize) -> [NetworkConnection; PROCESS_COUNT] {
+        self.connections[from_index]
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -63,12 +68,20 @@ pub struct Scenario {
 }
 
 impl Process {
-    fn new() -> Self {
+    fn new(send_connections: [NetworkConnection; PROCESS_COUNT]) -> Self {
         let uid = create_uid();
+
+        let mut send_values: [Option<Message>; PROCESS_COUNT] = [None; PROCESS_COUNT];
+        for index in 0..PROCESS_COUNT {
+            if send_connections[index] == NetworkConnection::ALLOWED {
+                send_values[index] = Some(Message::UID(uid));
+            }
+        }
 
         Process {
             uid,
-            send_values: [Some(Message::UID(uid)); PROCESS_COUNT],
+            send_connections,
+            send_values,
             input_values: [None; PROCESS_COUNT],
             status: Status::UNKNOWN,
             halted: false,
@@ -77,6 +90,10 @@ impl Process {
 
     pub fn get_uid(&self) -> u32 {
         self.uid
+    }
+
+    pub fn get_send_connections(&self) -> [NetworkConnection; PROCESS_COUNT] {
+        self.send_connections
     }
 
     pub fn get_send_values(&self) -> [Option<Message>; PROCESS_COUNT] {
@@ -139,14 +156,23 @@ impl Process {
         }
 
         for index in 0..PROCESS_COUNT {
-            self.send_values[index] = send_value;
+            self.send_values[index] = if self.send_connections[index] == NetworkConnection::ALLOWED
+            {
+                send_value
+            } else {
+                None
+            }
         }
     }
 }
 
 impl Scenario {
     pub fn new(processor_count: usize, network: Network) -> Self {
-        let processes = [0; PROCESS_COUNT].map(|_| Process::new());
+        let processes: Vec<Process> = (0..PROCESS_COUNT)
+            .map(|index| Process::new(network.get_connections_from(index)))
+            .collect();
+
+        let processes: [Process; PROCESS_COUNT] = processes.try_into().unwrap();
 
         Scenario {
             processes,

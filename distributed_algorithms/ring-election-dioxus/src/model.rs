@@ -34,7 +34,7 @@ pub enum NetworkConnection {
     ALLOWED = 1,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub struct Network {
     connections: [[NetworkConnection; PROCESS_COUNT]; PROCESS_COUNT],
 }

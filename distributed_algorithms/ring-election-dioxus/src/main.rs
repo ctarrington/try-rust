@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
-use ring_election_dioxus::model::{Network, NetworkConnection, Scenario};
 use ring_election_dioxus::components::NetworkComponent;
+use ring_election_dioxus::model::{Network, NetworkConnection, Scenario};
 
 fn main() {
     wasm_logger::init(wasm_logger::Config::new(log::Level::Trace));
@@ -58,26 +58,11 @@ fn App(cx: Scope) -> Element {
         }
     });
 
-    let network_list = (0..scenario.processor_count).map(|from| {
-        let row_summary: Vec<String> = (0..scenario.processor_count)
-            .map(|to| format!("{:?}", scenario.network.get_connections()[from][to]))
-            .collect();
-        let row_summary = row_summary.join(",");
-
-        rsx! {
-            div {
-                key: "{from}",
-                "{row_summary}"
-            }
-        }
-    });
-
     cx.render(rsx!(
         div {
             NetworkComponent {network: scenario.network, processor_count: scenario.processor_count}
             h1 {"Current Scenario"}
             button { onclick: on_scenario_tick, "Scenario+"}
-            network_list
             process_list
         }
     ))

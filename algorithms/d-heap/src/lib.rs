@@ -13,6 +13,16 @@ impl Heap {
         }
     }
 
+    pub fn from(child_count: usize, initial: Vec<i32>) -> Self {
+        let mut heap = Heap {
+            values: initial.clone(),
+            child_count,
+        };
+
+        heap.heapify();
+        heap
+    }
+
     pub fn insert(&mut self, value: i32) {
         self.values.push(value);
         self.bubble_up(self.values.len() - 1);
@@ -70,10 +80,23 @@ impl Heap {
         }
     }
 
+    fn heapify(&mut self) {
+        if self.values.is_empty() {
+            return;
+        }
+
+        let last_parent_index = self.get_parent_index(self.values.len() - 1).unwrap();
+        for index in (0..=last_parent_index).rev() {
+            self.push_down(index);
+        }
+    }
+
     fn push_down(&mut self, index: usize) {
         if let Some(max_child_index) = self.get_max_child_index(index) {
-            self.values.swap(index, max_child_index);
-            self.push_down(max_child_index);
+            if self.values.get(max_child_index) > self.values.get(index) {
+                self.values.swap(index, max_child_index);
+                self.push_down(max_child_index);
+            }
         }
     }
 }
@@ -124,6 +147,20 @@ mod tests {
         // 5
 
         assert_eq!(vec![9, 6, 3, 8, 5], heap.values);
+    }
+
+    #[test]
+    fn from_binary() {
+        let mut heap = Heap::from(2, vec![5, 9, 10, 8]);
+
+        //         5                         10
+        //    9        10   =>          9          5
+        // 8                         8
+        assert_eq!(vec![10, 9, 5, 8], heap.values);
+        assert_eq!(Some(10), heap.top());
+        assert_eq!(Some(9), heap.top());
+        assert_eq!(Some(8), heap.top());
+        assert_eq!(Some(5), heap.top());
     }
 
     #[test]

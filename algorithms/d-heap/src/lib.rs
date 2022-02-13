@@ -1,9 +1,19 @@
-pub struct Heap {
-    values: Vec<i32>,
+pub trait Priority {
+    fn get_priority(&self) -> i32;
+}
+
+impl Priority for i32 {
+    fn get_priority(&self) -> i32 {
+        *self
+    }
+}
+
+pub struct Heap<T> {
+    values: Vec<T>,
     child_count: usize,
 }
 
-impl Heap {
+impl<T: Priority> Heap<T> {
     pub fn new(child_count: usize) -> Self {
         let values = vec![];
 
@@ -13,9 +23,9 @@ impl Heap {
         }
     }
 
-    pub fn from(child_count: usize, initial: Vec<i32>) -> Self {
+    pub fn from(child_count: usize, initial: Vec<T>) -> Self {
         let mut heap = Heap {
-            values: initial.clone(),
+            values: initial,
             child_count,
         };
 
@@ -23,12 +33,12 @@ impl Heap {
         heap
     }
 
-    pub fn insert(&mut self, value: i32) {
+    pub fn insert(&mut self, value: T) {
         self.values.push(value);
         self.bubble_up(self.values.len() - 1);
     }
 
-    pub fn top(&mut self) -> Option<i32> {
+    pub fn top(&mut self) -> Option<T> {
         if self.values.is_empty() {
             return None;
         }
@@ -61,7 +71,7 @@ impl Heap {
                 break;
             }
 
-            let candidate_value = *self.values.get(candidate_index).unwrap();
+            let candidate_value = self.values.get(candidate_index).unwrap().get_priority();
             if candidate_value > max_child_value {
                 max_child_index = candidate_index;
                 max_child_value = candidate_value;
@@ -73,7 +83,9 @@ impl Heap {
 
     fn bubble_up(&mut self, index: usize) {
         if let Some(parent_index) = self.get_parent_index(index) {
-            if self.values.get(index).unwrap() > self.values.get(parent_index).unwrap() {
+            if self.values.get(index).unwrap().get_priority()
+                > self.values.get(parent_index).unwrap().get_priority()
+            {
                 self.values.swap(index, parent_index);
                 self.bubble_up(parent_index);
             }
@@ -93,7 +105,9 @@ impl Heap {
 
     fn push_down(&mut self, index: usize) {
         if let Some(max_child_index) = self.get_max_child_index(index) {
-            if self.values.get(max_child_index) > self.values.get(index) {
+            if self.values.get(max_child_index).unwrap().get_priority()
+                > self.values.get(index).unwrap().get_priority()
+            {
                 self.values.swap(index, max_child_index);
                 self.push_down(max_child_index);
             }
@@ -103,7 +117,7 @@ impl Heap {
 
 #[cfg(test)]
 mod tests {
-    use crate::Heap;
+    use crate::{Heap, Priority};
 
     #[test]
     fn insert_binary() {
@@ -187,5 +201,39 @@ mod tests {
         assert_eq!(Some(5), heap.top());
         assert_eq!(Some(3), heap.top());
         assert_eq!(None, heap.top());
+    }
+
+    #[test]
+    fn priority_messages() {
+        struct Message {
+            text: String,
+            priority: i32,
+        }
+
+        impl Priority for Message {
+            fn get_priority(&self) -> i32 {
+                self.priority
+            }
+        }
+
+        let messages = vec![
+            Message {
+                text: "Ho".to_string(),
+                priority: 20,
+            },
+            Message {
+                text: "Hi".to_string(),
+                priority: 30,
+            },
+            Message {
+                text: "Silver".to_string(),
+                priority: 10,
+            },
+        ];
+
+        let mut heap = Heap::from(2, messages);
+        assert_eq!("Hi", heap.top().unwrap().text);
+        assert_eq!("Ho", heap.top().unwrap().text);
+        assert_eq!("Silver", heap.top().unwrap().text);
     }
 }

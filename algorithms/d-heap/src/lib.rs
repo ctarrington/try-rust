@@ -10,23 +10,23 @@ impl Priority for i32 {
 
 pub struct Heap<T> {
     values: Vec<T>,
-    child_count: usize,
+    branch_factor: usize,
 }
 
 impl<T: Priority> Heap<T> {
-    pub fn new(child_count: usize) -> Self {
+    pub fn new(branch_factor: usize) -> Self {
         let values = vec![];
 
         Heap {
             values,
-            child_count,
+            branch_factor,
         }
     }
 
-    pub fn from(child_count: usize, initial: Vec<T>) -> Self {
+    pub fn from(branch_factor: usize, initial: Vec<T>) -> Self {
         let mut heap = Heap {
             values: initial,
-            child_count,
+            branch_factor,
         };
 
         heap.heapify();
@@ -35,7 +35,7 @@ impl<T: Priority> Heap<T> {
 
     pub fn insert(&mut self, value: T) {
         self.values.push(value);
-        self.bubble_up(self.values.len() - 1);
+        self.bubble_up(self.last_index());
     }
 
     pub fn top(&mut self) -> Option<T> {
@@ -43,8 +43,8 @@ impl<T: Priority> Heap<T> {
             return None;
         }
 
-        let last = self.values.len() - 1;
-        self.values.swap(0, last);
+        let last_index = self.last_index();
+        self.values.swap(0, last_index);
         let top_value = self.values.pop();
         self.push_down(0);
 
@@ -54,20 +54,20 @@ impl<T: Priority> Heap<T> {
     fn get_parent_index(&self, index: usize) -> Option<usize> {
         match index {
             0 => None,
-            _ => Some((index - 1) / self.child_count),
+            _ => Some((index - 1) / self.branch_factor),
         }
     }
 
     fn get_max_child_index(&self, index: usize) -> Option<usize> {
-        if self.values.is_empty() || index * self.child_count >= self.values.len() - 1 {
+        if self.values.is_empty() || index * self.branch_factor >= self.last_index() {
             return None;
         }
 
         let mut max_child_value = 0;
         let mut max_child_index = 0;
-        for offset in 1..=self.child_count {
-            let candidate_index = index * self.child_count + offset;
-            if candidate_index > self.values.len() - 1 {
+        for offset in 1..=self.branch_factor {
+            let candidate_index = index * self.branch_factor + offset;
+            if candidate_index > self.last_index() {
                 break;
             }
 
@@ -97,7 +97,7 @@ impl<T: Priority> Heap<T> {
             return;
         }
 
-        let last_parent_index = self.get_parent_index(self.values.len() - 1).unwrap();
+        let last_parent_index = self.get_parent_index(self.last_index()).unwrap();
         for index in (0..=last_parent_index).rev() {
             self.push_down(index);
         }
@@ -112,6 +112,32 @@ impl<T: Priority> Heap<T> {
                 self.push_down(max_child_index);
             }
         }
+    }
+
+    fn last_index(&self) -> usize {
+        self.values.len() - 1
+    }
+}
+
+// ------------------- iteration over Ts ----------------------------------
+
+// into_iter provides an iterator over Ts after the heap is moved into the HeapIntoIter
+impl<T> Heap<T> {
+    // creates an iterator. The heap is moved into the HeapIntoIter and is no longer available
+    pub fn into_iter(self) -> HeapIntoIter<T> {
+        HeapIntoIter(self)
+    }
+}
+
+// wrap the heap so we have a place to put the iteration logic
+// no need for a lifetime since the Heap is moved into it
+pub struct HeapIntoIter<T>(Heap<T>);
+
+impl<T: Priority> Iterator for HeapIntoIter<T> {
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.top()
     }
 }
 
@@ -204,7 +230,7 @@ mod tests {
     }
 
     #[test]
-    fn priority_messages() {
+    fn priority_messages_with_iteration() {
         struct Message {
             text: String,
             priority: i32,
@@ -231,9 +257,8 @@ mod tests {
             },
         ];
 
-        let mut heap = Heap::from(2, messages);
-        assert_eq!("Hi", heap.top().unwrap().text);
-        assert_eq!("Ho", heap.top().unwrap().text);
-        assert_eq!("Silver", heap.top().unwrap().text);
+        let heap = Heap::from(2, messages);
+        let ordered_text: Vec<String> = heap.into_iter().map(|message| message.text).collect();
+        assert_eq!(vec!["Hi", "Ho", "Silver"], ordered_text);
     }
 }

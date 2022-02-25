@@ -2,30 +2,45 @@ struct SimpleSearchTree<T> {
     root: Link<T>,
 }
 
-impl<T: std::cmp::PartialOrd + Copy> SimpleSearchTree<T> {
-    fn new() -> Self {
-        SimpleSearchTree {
-            root: None,
-        }
+impl<T: std::cmp::PartialOrd> SimpleSearchTree<T> {
+    pub fn new() -> Self {
+        SimpleSearchTree { root: Link::new() }
     }
 
-    fn insert(mut self, new_element: T) {
-        match self.root {
-            None => self.root = Some(Box::new(Node::new(new_element))),
-            Some(mut boxed_node) => boxed_node.insert(new_element),
+    pub fn insert(&mut self, new_element: T) {
+        self.root.insert(new_element);
+    }
+
+    pub fn contains(&self, element: T) -> bool {
+        self.root.contains(element)
+    }
+}
+
+struct Link<T> {
+    path: Option<Box<Node<T>>>,
+}
+
+impl<T: std::cmp::PartialOrd> Link<T> {
+    fn new() -> Self {
+        Link { path: None }
+    }
+
+    fn insert(&mut self, new_element: T) {
+        if let Some(boxed_node) = self.path.as_mut() {
+            let node = boxed_node.as_mut();
+            node.insert(new_element);
+        } else {
+            self.path = Some(Box::new(Node::new(new_element)));
         }
     }
 
     fn contains(&self, element: T) -> bool {
-        match &self.root {
+        match &self.path {
             None => false,
-            Some(boxed_node)=> boxed_node.contains(element),
+            Some(boxed_node) => boxed_node.contains(element),
         }
-
     }
 }
-
-type Link<T> = Option<Box<Node<T>>>;
 
 struct Node<T> {
     left: Link<T>,
@@ -33,26 +48,20 @@ struct Node<T> {
     element: T,
 }
 
-impl<T: std::cmp::PartialOrd + Copy> Node<T> {
-   fn new(element: T) -> Self {
-       Node {
-           left: None,
-           right: None,
-           element,
-       }
-   }
+impl<T: std::cmp::PartialOrd> Node<T> {
+    fn new(element: T) -> Self {
+        Node {
+            left: Link::new(),
+            right: Link::new(),
+            element,
+        }
+    }
 
-    fn insert(mut self, new_element: T) {
+    fn insert(&mut self, new_element: T) {
         if new_element <= self.element {
-            match self.left {
-                None=> self.left = Some(Box::new(Node::new(new_element))),
-                Some(mut boxed_node)=> boxed_node.insert(new_element),
-            }
+            self.left.insert(new_element);
         } else {
-            match self.right {
-                None=> self.right = Some(Box::new(Node::new(new_element))),
-                Some(mut boxed_node)=> boxed_node.insert(new_element),
-            }
+            self.right.insert(new_element);
         }
     }
 
@@ -61,15 +70,9 @@ impl<T: std::cmp::PartialOrd + Copy> Node<T> {
             true
         } else {
             if element <= self.element {
-                match &self.left {
-                    None => false,
-                    Some(boxed_node)=> boxed_node.contains(element),
-                }
+                self.left.contains(element)
             } else {
-                match &self.left {
-                    None => false,
-                    Some(boxed_node) => boxed_node.contains(element),
-                }
+                self.right.contains(element)
             }
         }
     }
@@ -83,8 +86,9 @@ mod tests {
     fn insertion() {
         let mut tree = SimpleSearchTree::<u32>::new();
         tree.insert(10);
-        // `assert!(tree.contains(10));
-        //  assert!(!tree.contains(11));
-        println!("hi");
+        assert!(tree.contains(10));
+        assert!(!tree.contains(11));
+        tree.insert(11);
+        assert!(tree.contains(11));
     }
 }

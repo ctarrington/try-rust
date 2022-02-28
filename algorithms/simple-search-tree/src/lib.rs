@@ -1,4 +1,4 @@
-struct SimpleSearchTree<T> {
+pub struct SimpleSearchTree<T> {
     root: Link<T>,
 }
 
@@ -27,8 +27,7 @@ impl<T: std::cmp::PartialOrd> Link<T> {
 
     fn insert(&mut self, new_element: T) {
         if let Some(boxed_node) = self.path.as_mut() {
-            let node = boxed_node.as_mut();
-            node.insert(new_element);
+            boxed_node.insert(new_element);
         } else {
             self.path = Some(Box::new(Node::new(new_element)));
         }

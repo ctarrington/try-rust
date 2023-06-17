@@ -42,9 +42,20 @@ fn main() {
     };
 
     println!("fred = {:?}", fred);
+    println!("fred = {}", fred);
     fred.increase_age();
     println!("fred = {:?}", fred);
     // fred.age += 1; // nope private
+
+    let wilma = Person {
+        name: String::from("Wilma"),
+        nick_name: String::from("Wilma"),
+        age: 15,
+        friend: Option::Some(Box::new(fred)),
+    };
+
+    println!("wilma = {:?}", wilma);
+    println!("wilma = {}", wilma);
 
     println!("move = {}", Move::Up(2).extract_motion());
     println!("move = {}", Move::Down(2).extract_motion());
@@ -97,6 +108,7 @@ fn test_person() {
         friend: None,
     };
 
+    assert_eq!("Joe is 55 years old. They are lonely", format!("{}", joe));
     assert_eq!("Joe", joe.name);
     assert_eq!(55, joe.age);
 

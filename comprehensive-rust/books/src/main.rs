@@ -35,7 +35,7 @@ impl Library {
     }
 
     fn is_empty(&self) -> bool {
-        self.books.len() == 0
+        self.books.is_empty()
     }
 
     fn add_book(&mut self, book: Book) {
@@ -62,7 +62,40 @@ impl Library {
         }
 
         Some(oldest)
+    }
+}
 
+#[test]
+fn test_is_empty() {
+    let mut library = Library::new();
+    assert!(library.is_empty());
+    library.add_book(Book::new("The end", 2000));
+    assert!(!library.is_empty());
+}
+
+#[test]
+fn test_len() {
+    let mut library = Library::new();
+    assert_eq!(library.len(), 0);
+    library.add_book(Book::new("The end", 2000));
+    assert_eq!(library.len(), 1);
+}
+
+#[test]
+fn test_oldest_book() {
+    let mut library = Library::new();
+    match library.oldest_book() {
+       Some(_book) => assert!(false),
+        None => assert!(true),
+    }
+
+    library.add_book(Book::new("The end", 2000));
+    library.add_book(Book::new("The beginning", 1999));
+    library.add_book(Book::new("The other", 2010));
+
+    match library.oldest_book() {
+        Some(book) => assert_eq!(book.title, "The beginning"),
+        None => assert!(false),
     }
 }
 

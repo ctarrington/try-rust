@@ -25,7 +25,7 @@ impl Book {
 // - `self` for unique access by value.
 impl Library {
     fn new() -> Self {
-       Library {
+       Self {
            books: vec![],
        }
     }

@@ -9,10 +9,6 @@ pub fn prefix_matches(prefix: &str, request_path: &str) -> bool {
         return false;
     }
 
-    if request_bytes.len() > prefix_bytes.len() && request_bytes[prefix_bytes.len()] as char != '/' {
-        return false;
-    }
-
     loop {
         let prefix_character = if prefix_index >= prefix_bytes.len() {
             '/'
@@ -21,18 +17,29 @@ pub fn prefix_matches(prefix: &str, request_path: &str) -> bool {
         };
         let request_character = request_bytes[request_index] as char;
 
-        if prefix_character != request_character {
-            return false;
+        if prefix_character == '*' {
+            if request_character == '/' {
+                prefix_index += 2;
+            }
+        } else {
+            if prefix_character != request_character {
+                return false;
+            }
+            prefix_index += 1;
         }
 
-        prefix_index += 1;
+
         request_index += 1;
+
 
         if request_index >= request_bytes.len() {
             break;
         }
 
-        if prefix_index >= prefix_bytes.len() {
+        if prefix_index > prefix_bytes.len() {
+            if request_character != '/' {
+                return false;
+            }
             break;
         }
     }
@@ -52,4 +59,29 @@ fn test_mismatches_without_wildcard() {
     assert!(!prefix_matches("/v1/publishers", "/v1"));
     assert!(!prefix_matches("/v1/publishers", "/v1/publishersBooks"));
     assert!(!prefix_matches("/v1/publishers", "/v1/parent/publishers"));
+}
+
+#[test]
+fn test_matches_with_wildcard() {
+    assert!(prefix_matches(
+        "/v1/publishers/*/books",
+        "/v1/publishers/foo/books"
+    ));
+    assert!(prefix_matches(
+        "/v1/publishers/*/books",
+        "/v1/publishers/bar/books"
+    ));
+    assert!(prefix_matches(
+        "/v1/publishers/*/books",
+        "/v1/publishers/foo/books/book1"
+    ));
+}
+
+    #[test]
+    fn test_mismatches_with_wildcard() {
+    assert!(!prefix_matches("/v1/publishers/*/books", "/v1/publishers"));
+    assert!(!prefix_matches(
+        "/v1/publishers/*/books",
+        "/v1/publishers/foo/booksByAuthor"
+    ));
 }

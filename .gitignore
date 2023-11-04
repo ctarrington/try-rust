@@ -2,6 +2,7 @@ target/
 dist/
 .idea/
 output/
+.DS_Store
 *.wasm
 .appveyor.yml
 .travis.yml

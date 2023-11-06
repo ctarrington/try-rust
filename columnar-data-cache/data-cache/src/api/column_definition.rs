@@ -30,11 +30,18 @@ fn get_value(column_definition: &ColumnDefinition, value: &str) -> Option<String
 }
 
 #[derive(Debug, PartialEq)]
+pub struct TypeParseError {}
+
+#[derive(Debug, PartialEq)]
 pub struct StringColumnType {}
 
 impl StringColumnType {
-    pub fn parse(&self, column_definition: &ColumnDefinition, value: &str) -> Option<String> {
-        get_value(column_definition, value)
+    pub fn parse(
+        &self,
+        column_definition: &ColumnDefinition,
+        value: &str,
+    ) -> Result<Option<String>, TypeParseError> {
+        Ok(get_value(column_definition, value))
     }
 }
 
@@ -45,16 +52,20 @@ pub struct BooleanColumnType {}
 /// and "false" and "0" as false.
 /// Blank is not false, but rather None.
 impl BooleanColumnType {
-    pub fn parse(&self, column_definition: &ColumnDefinition, value: &str) -> Option<bool> {
+    pub fn parse(
+        &self,
+        column_definition: &ColumnDefinition,
+        value: &str,
+    ) -> Result<Option<bool>, TypeParseError> {
         match get_value(column_definition, value) {
             Some(the_value) => match the_value.as_str().to_ascii_lowercase().trim() {
-                "true" => Some(true),
-                "false" => Some(false),
-                "0" => Some(false),
-                "1" => Some(true),
-                _ => None,
+                "true" => Ok(Some(true)),
+                "false" => Ok(Some(false)),
+                "0" => Ok(Some(false)),
+                "1" => Ok(Some(true)),
+                _ => Err(TypeParseError {}),
             },
-            _ => None,
+            _ => Ok(None),
         }
     }
 }
@@ -70,14 +81,15 @@ impl DateTimeColumnType {
         &self,
         column_definition: &ColumnDefinition,
         value: &str,
-    ) -> Option<NaiveDateTime> {
-        let the_value = get_value(column_definition, value);
-        match the_value {
-            Some(the_value) => Some(
-                NaiveDateTime::parse_from_str(the_value.as_str(), self.format.as_str()).unwrap(),
-            ),
-            None => None,
+    ) -> Result<Option<NaiveDateTime>, TypeParseError> {
+        let the_value = get_value(column_definition, value).unwrap();
+        if the_value.is_empty() {
+            return Ok(None);
         }
+
+        NaiveDateTime::parse_from_str(the_value.as_str(), self.format.as_str())
+            .map(Some)
+            .map_err(|_| TypeParseError {})
     }
 }
 #[derive(Debug, PartialEq)]
@@ -86,11 +98,17 @@ pub struct NumericColumnType {
 }
 
 impl NumericColumnType {
-    pub fn parse(&self, column_definition: &ColumnDefinition, value: &str) -> Option<f64> {
-        let the_value = get_value(column_definition, value);
-        match the_value {
-            Some(the_value) => Some(the_value.parse::<f64>().unwrap()),
-            None => None,
+    pub fn parse(
+        &self,
+        column_definition: &ColumnDefinition,
+        value: &str,
+    ) -> Result<Option<f64>, TypeParseError> {
+        match get_value(column_definition, value) {
+            Some(the_value) => the_value
+                .parse::<f64>()
+                .map(Some)
+                .map_err(|_| TypeParseError {}),
+            _ => Ok(None),
         }
     }
 }
@@ -188,11 +206,11 @@ mod tests {
         let string_column_type = StringColumnType {};
         let definition = generate_string_column_definition();
         assert_eq!(
-            string_column_type.parse(&definition, "value"),
+            string_column_type.parse(&definition, "value").unwrap(),
             Some("value".to_string())
         );
         assert_eq!(
-            string_column_type.parse(&definition, ""),
+            string_column_type.parse(&definition, "").unwrap(),
             Some("-".to_string())
         );
     }
@@ -201,18 +219,39 @@ mod tests {
     fn test_boolean_column_type() {
         let boolean_column_type = BooleanColumnType {};
         let definition = generate_boolean_column_definition();
-        assert_eq!(boolean_column_type.parse(&definition, "true"), Some(true));
-        assert_eq!(boolean_column_type.parse(&definition, "True"), Some(true));
-        assert_eq!(boolean_column_type.parse(&definition, " True "), Some(true));
-        assert_eq!(boolean_column_type.parse(&definition, "1"), Some(true));
+        assert_eq!(
+            boolean_column_type.parse(&definition, "true").unwrap(),
+            Some(true)
+        );
+        assert_eq!(
+            boolean_column_type.parse(&definition, "True").unwrap(),
+            Some(true)
+        );
+        assert_eq!(
+            boolean_column_type.parse(&definition, " True ").unwrap(),
+            Some(true)
+        );
+        assert_eq!(
+            boolean_column_type.parse(&definition, "1").unwrap(),
+            Some(true)
+        );
 
-        assert_eq!(boolean_column_type.parse(&definition, "false"), Some(false));
-        assert_eq!(boolean_column_type.parse(&definition, "FALSE"), Some(false));
-        assert_eq!(boolean_column_type.parse(&definition, "0"), Some(false));
+        assert_eq!(
+            boolean_column_type.parse(&definition, "false").unwrap(),
+            Some(false)
+        );
+        assert_eq!(
+            boolean_column_type.parse(&definition, "FALSE").unwrap(),
+            Some(false)
+        );
+        assert_eq!(
+            boolean_column_type.parse(&definition, "0").unwrap(),
+            Some(false)
+        );
 
-        assert_eq!(boolean_column_type.parse(&definition, ""), None);
-        assert_eq!(boolean_column_type.parse(&definition, "2"), None);
-        assert_eq!(boolean_column_type.parse(&definition, "True2"), None);
+        assert_eq!(boolean_column_type.parse(&definition, "").unwrap(), None);
+        assert!(boolean_column_type.parse(&definition, "2").is_err());
+        assert!(boolean_column_type.parse(&definition, "True2").is_err());
     }
 
     #[test]
@@ -221,9 +260,13 @@ mod tests {
             units: "meters/second".to_string(),
         };
         let definition = generate_numeric_column_definition();
-        assert_eq!(numeric_column_type.parse(&definition, "1.0"), Some(1.0));
-        assert_eq!(numeric_column_type.parse(&definition, "1.123"), Some(1.123));
-        assert_eq!(numeric_column_type.parse(&definition, ""), None);
+        assert_eq!(numeric_column_type.parse(&definition, "1.0"), Ok(Some(1.0)));
+        assert_eq!(
+            numeric_column_type.parse(&definition, "1.123"),
+            Ok(Some(1.123))
+        );
+        assert_eq!(numeric_column_type.parse(&definition, "").unwrap(), None);
+        assert!(numeric_column_type.parse(&definition, "abc").is_err());
         assert_eq!(numeric_column_type.units, "meters/second".to_string());
     }
 
@@ -235,8 +278,11 @@ mod tests {
         let definition = generate_datetime_column_definition();
         assert_eq!(
             datetime_column_type.parse(&definition, "2020-01-01 00:00:00"),
-            Some(NaiveDateTime::parse_from_str("2020-01-01 00:00:00", DATE_TIME_FORMAT).unwrap())
+            Ok(Some(
+                NaiveDateTime::parse_from_str("2020-01-01 00:00:00", DATE_TIME_FORMAT).unwrap()
+            ))
         );
+        assert!(datetime_column_type.parse(&definition, "qqq").is_err());
     }
 
     #[test]

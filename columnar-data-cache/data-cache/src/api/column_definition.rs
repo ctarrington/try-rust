@@ -20,9 +20,9 @@ use chrono::NaiveDateTime;
 // todo: units should be an enum?
 
 fn get_value(column_definition: &ColumnDefinition, value: &str) -> Option<String> {
-    if value.len() > 0 {
+    if !value.is_empty() {
         Some(value.to_string())
-    } else if column_definition.get_default_value().len() > 0 {
+    } else if !column_definition.get_default_value().is_empty() {
         Some(column_definition.get_default_value().to_string())
     } else {
         None

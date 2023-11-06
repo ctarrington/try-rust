@@ -9,12 +9,15 @@ use chrono::NaiveDateTime;
 /// 1. The column type is an enum, but the parse method is implemented on each of the enum variants.
 /// 2. The DateTimeColumnType struct has a format string that is used to parse the date.
 ///    The passed data value must match the format string or a panic will occur.
+/// 3. The NumericColumnType struct expects a string value that can be parsed as a f64.
+///    If the passed value does not parse, a panic will occur.
+/// 4. The NumericColumnType struct has a units field that can be used by client code. It does not
+///    affect the parsing or storage of the value.
 
 // This is a helper function that returns the value of a column based on the passed value and the
 // default value for the column definition.
 
-// todo: units should be an enum
-// todo: implement precision for NumericColumnType
+// todo: units should be an enum?
 
 fn get_value(column_definition: &ColumnDefinition, value: &str) -> Option<String> {
     if value.len() > 0 {
@@ -79,7 +82,6 @@ impl DateTimeColumnType {
 }
 #[derive(Debug, PartialEq)]
 pub struct NumericColumnType {
-    precision: u8,
     units: String,
 }
 
@@ -164,7 +166,6 @@ mod tests {
             name: "speed".parse().unwrap(),
             view_name: "Speed".to_string(),
             column_type: ColumnType::NumericColumnType(NumericColumnType {
-                precision: 2,
                 units: "meters/second".to_string(),
             }),
             default_value: "".to_string(),
@@ -202,16 +203,26 @@ mod tests {
         let definition = generate_boolean_column_definition();
         assert_eq!(boolean_column_type.parse(&definition, "true"), Some(true));
         assert_eq!(boolean_column_type.parse(&definition, "True"), Some(true));
+        assert_eq!(boolean_column_type.parse(&definition, " True "), Some(true));
+        assert_eq!(boolean_column_type.parse(&definition, "1"), Some(true));
+
+        assert_eq!(boolean_column_type.parse(&definition, "false"), Some(false));
+        assert_eq!(boolean_column_type.parse(&definition, "FALSE"), Some(false));
+        assert_eq!(boolean_column_type.parse(&definition, "0"), Some(false));
+
+        assert_eq!(boolean_column_type.parse(&definition, ""), None);
+        assert_eq!(boolean_column_type.parse(&definition, "2"), None);
+        assert_eq!(boolean_column_type.parse(&definition, "True2"), None);
     }
 
     #[test]
     fn test_numeric_column_type() {
         let numeric_column_type = NumericColumnType {
-            precision: 2,
             units: "meters/second".to_string(),
         };
         let definition = generate_numeric_column_definition();
         assert_eq!(numeric_column_type.parse(&definition, "1.0"), Some(1.0));
+        assert_eq!(numeric_column_type.parse(&definition, "1.123"), Some(1.123));
         assert_eq!(numeric_column_type.parse(&definition, ""), None);
         assert_eq!(numeric_column_type.units, "meters/second".to_string());
     }

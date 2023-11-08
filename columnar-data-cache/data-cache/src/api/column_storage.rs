@@ -1,36 +1,83 @@
-use crate::api::column_definition::ColumnDefinition;
-use crate::api::column_type::{StringColumnType, TypeParseError};
+use crate::api::column::Column;
+use crate::api::parsers::{parse_bool, parse_f64, TypeParseError};
 
-pub struct StringColumnStorage {
-    column_definition: ColumnDefinition,
-    column_type: StringColumnType,
-    data: Vec<String>,
+pub enum ColumnStorage {
+    BooleanStorage {
+        column: Column,
+        data: Vec<Option<bool>>,
+    },
+    F64Storage {
+        column: Column,
+        data: Vec<Option<f64>>,
+    },
 }
 
-impl StringColumnStorage {
-    pub fn new(column_definition: ColumnDefinition) -> Self {
-        Self {
-            column_definition,
-            column_type: StringColumnType {},
-            data: Vec::new(),
+impl ColumnStorage {
+    pub fn add_value(&mut self, value: &str) -> Result<Option<f64>, TypeParseError> {
+        match self {
+            ColumnStorage::BooleanStorage { data, column } => {
+                let parsed_value = parse_bool(value, column.default_value.as_str());
+                match parsed_value {
+                    Ok(value) => {
+                        data.push(value);
+                        Ok(None)
+                    }
+                    Err(_) => {
+                        data.push(None);
+                        Err(TypeParseError {})
+                    }
+                }
+            }
+            ColumnStorage::F64Storage { data, column } => {
+                let parsed_value = parse_f64(value, column.default_value.as_str());
+                match parsed_value {
+                    Ok(value) => {
+                        data.push(value);
+                        Ok(None)
+                    }
+                    Err(_) => {
+                        data.push(None);
+                        Err(TypeParseError {})
+                    }
+                }
+            }
         }
     }
 
-    pub fn get_value(&self, index: usize) -> Option<&String> {
-        self.data.get(index)
+    pub fn get_length(&self) -> usize {
+        match self {
+            ColumnStorage::BooleanStorage { data, .. } => data.len(),
+            ColumnStorage::F64Storage { data, .. } => data.len(),
+        }
     }
 
-    pub fn add(&mut self, value: String) -> Result<Option<&String>, TypeParseError> {
-        let parse_result = self
-            .column_type
-            .parse(self.column_definition.get_default_value(), value.as_str());
-
-        match parse_result {
-            Ok(the_value) => {
-                self.data.push(the_value.unwrap());
-                Ok(self.data.last())
+    pub fn remove_last_value(&mut self) {
+        match self {
+            ColumnStorage::BooleanStorage { data, .. } => {
+                data.pop();
             }
-            Err(the_error) => Err(the_error),
+            ColumnStorage::F64Storage { data, .. } => {
+                data.pop();
+            }
+        }
+    }
+
+    pub fn get_as_string(&self, index: usize) -> String {
+        match self {
+            ColumnStorage::BooleanStorage { data, .. } => match data.get(index) {
+                Some(value) => match value {
+                    Some(value) => value.to_string(),
+                    None => "".to_string(),
+                },
+                None => "".to_string(),
+            },
+            ColumnStorage::F64Storage { data, .. } => match data.get(index) {
+                Some(value) => match value {
+                    Some(value) => value.to_string(),
+                    None => "".to_string(),
+                },
+                None => "".to_string(),
+            },
         }
     }
 }
@@ -40,22 +87,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_string_column_storage() {
-        let mut column_storage = StringColumnStorage::new(ColumnDefinition::new(
-            "name".parse().unwrap(),
-            "The Name".parse().unwrap(),
-            "-".parse().unwrap(),
-        ));
-        assert_eq!(column_storage.get_value(0), None);
-        assert_eq!(
-            column_storage.add("Joe".parse().unwrap()),
-            Ok(Some(&"Joe".to_string()))
-        );
-        assert_eq!(column_storage.get_value(0), Some(&"Joe".to_string()));
-        assert_eq!(
-            column_storage.add("".parse().unwrap()),
-            Ok(Some(&"-".to_string()))
-        );
-        assert_eq!(column_storage.get_value(1), Some(&"-".to_string()));
+    fn test_boolean_storage() {
+        let column = Column::new("verified", "Verified", "false");
+        let mut storage = ColumnStorage::BooleanStorage {
+            column: column,
+            data: vec![],
+        };
+
+        let result = storage.add_value("true");
+        assert_eq!(result, Ok(None));
+        assert_eq!(storage.get_as_string(0), "true");
     }
 }

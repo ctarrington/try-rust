@@ -8,11 +8,14 @@ pub struct Cache {
 }
 
 impl Cache {
-    pub fn add_row(&mut self, row: &str) -> Option<TypeParseError> {
+    pub fn add_row(&mut self, row: &str) -> Result<(), TypeParseError> {
         let mut error: Option<TypeParseError> = None;
         let values: Vec<&str> = row.split(",").collect();
 
-        // todo check for mismatch between column count and passed count
+        if values.len() != self.column_stores.len() {
+            return Err(TypeParseError {});
+        }
+
         for (index, value) in values.iter().enumerate() {
             let column_store = self.column_stores.get_mut(index).unwrap();
             let result = column_store.add_value(value);
@@ -25,9 +28,9 @@ impl Cache {
             for column_store in self.column_stores.iter_mut() {
                 column_store.remove_last_value();
             }
-            Some(error)
+            Err(error)
         } else {
-            None
+            Ok(())
         }
     }
 
@@ -58,24 +61,39 @@ mod tests {
 
     #[test]
     fn test_simple() {
-        let column1 = Column::new("verified", "Verified", "false");
-        let column2 = Column::new("age", "Age", "0");
-
         let mut cache = Cache {
             column_stores: vec![
+                ColumnStorage::StringStorage {
+                    column: Column::new("name", "Name", "unknown"),
+                    data: vec![],
+                },
                 ColumnStorage::BooleanStorage {
-                    column: column1,
+                    column: Column::new("verified", "Verified", "false"),
                     data: vec![],
                 },
                 ColumnStorage::F64Storage {
-                    column: column2,
+                    column: Column::new("age", "Age", "0"),
                     data: vec![],
+                },
+                ColumnStorage::TimeDateStorage {
+                    column: Column::new("starttime", "Start Time", ""),
+                    data: vec![],
+                    format: "%Y-%m-%d %H:%M:%S".parse().unwrap(),
                 },
             ],
         };
 
         assert!(cache.row_as_csv(0).is_err());
-        cache.add_row("true, 1");
-        assert_eq!(cache.row_as_csv(0).unwrap(), "true,1");
+        cache.add_row("fred,true, 1, 2019-01-01 00:00:00").unwrap();
+        assert_eq!(
+            cache.row_as_csv(0).unwrap(),
+            "fred,true,1,2019-01-01 00:00:00"
+        );
+        assert!(cache.add_row("wilma,false, 2020-01-01 00:00:00").is_err());
+
+        assert_eq!(
+            cache.row_as_csv(0).unwrap(),
+            "fred,true,1,2019-01-01 00:00:00"
+        );
     }
 }

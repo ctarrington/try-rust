@@ -1,3 +1,5 @@
+use chrono::NaiveDateTime;
+
 // This is a helper function that returns the value of a column based on the passed value and the
 // default value for the column definition.
 fn get_value(value: &str, default_value: &str) -> Option<String> {
@@ -43,6 +45,21 @@ pub fn parse_string(value: &str, default_value: &str) -> Result<Option<String>, 
     }
 }
 
+pub fn parse_date_time(
+    value: &str,
+    default_value: &str,
+    format: &str,
+) -> Result<Option<NaiveDateTime>, TypeParseError> {
+    let the_value = get_value(default_value, value).unwrap();
+    if the_value.is_empty() {
+        return Ok(None);
+    }
+
+    NaiveDateTime::parse_from_str(the_value.as_str(), format)
+        .map(Some)
+        .map_err(|_| TypeParseError {})
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -71,5 +88,15 @@ mod tests {
         assert_eq!(parse_f64("", " 1").unwrap(), Some(1.0));
         assert!(parse_f64("invalid", "1").is_err());
         assert!(parse_f64("", "invalid").is_err());
+    }
+
+    #[test]
+    fn test_date_time() {
+        const DATE_TIME_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
+
+        assert_eq!(
+            parse_date_time("2020-01-01 00:00:00", "", DATE_TIME_FORMAT).unwrap(),
+            Some(NaiveDateTime::parse_from_str("2020-01-01 00:00:00", DATE_TIME_FORMAT).unwrap())
+        );
     }
 }

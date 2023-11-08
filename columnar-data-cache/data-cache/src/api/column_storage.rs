@@ -1,7 +1,11 @@
 use crate::api::column::Column;
-use crate::api::parsers::{parse_bool, parse_f64, TypeParseError};
+use crate::api::parsers::{parse_bool, parse_date_time, parse_f64, parse_string, TypeParseError};
 
 pub enum ColumnStorage {
+    StringStorage {
+        column: Column,
+        data: Vec<Option<String>>,
+    },
     BooleanStorage {
         column: Column,
         data: Vec<Option<bool>>,
@@ -9,6 +13,11 @@ pub enum ColumnStorage {
     F64Storage {
         column: Column,
         data: Vec<Option<f64>>,
+    },
+    TimeDateStorage {
+        column: Column,
+        data: Vec<Option<chrono::NaiveDateTime>>,
+        format: String,
     },
 }
 
@@ -41,6 +50,36 @@ impl ColumnStorage {
                     }
                 }
             }
+            ColumnStorage::StringStorage { data, column } => {
+                let parsed_value = parse_string(value, column.default_value.as_str());
+                match parsed_value {
+                    Ok(value) => {
+                        data.push(value);
+                        Ok(None)
+                    }
+                    Err(_) => {
+                        data.push(None);
+                        Err(TypeParseError {})
+                    }
+                }
+            }
+            ColumnStorage::TimeDateStorage {
+                data,
+                column,
+                format,
+            } => {
+                let parsed_value = parse_date_time(value, column.default_value.as_str(), format);
+                match parsed_value {
+                    Ok(value) => {
+                        data.push(value);
+                        Ok(None)
+                    }
+                    Err(_) => {
+                        data.push(None);
+                        Err(TypeParseError {})
+                    }
+                }
+            }
         }
     }
 
@@ -48,6 +87,8 @@ impl ColumnStorage {
         match self {
             ColumnStorage::BooleanStorage { data, .. } => data.len(),
             ColumnStorage::F64Storage { data, .. } => data.len(),
+            ColumnStorage::StringStorage { data, .. } => data.len(),
+            ColumnStorage::TimeDateStorage { data, .. } => data.len(),
         }
     }
 
@@ -57,6 +98,12 @@ impl ColumnStorage {
                 data.pop();
             }
             ColumnStorage::F64Storage { data, .. } => {
+                data.pop();
+            }
+            ColumnStorage::StringStorage { data, .. } => {
+                data.pop();
+            }
+            ColumnStorage::TimeDateStorage { data, .. } => {
                 data.pop();
             }
         }
@@ -72,6 +119,20 @@ impl ColumnStorage {
                 None => "".to_string(),
             },
             ColumnStorage::F64Storage { data, .. } => match data.get(index) {
+                Some(value) => match value {
+                    Some(value) => value.to_string(),
+                    None => "".to_string(),
+                },
+                None => "".to_string(),
+            },
+            ColumnStorage::StringStorage { data, .. } => match data.get(index) {
+                Some(value) => match value {
+                    Some(value) => value.to_string(),
+                    None => "".to_string(),
+                },
+                None => "".to_string(),
+            },
+            ColumnStorage::TimeDateStorage { data, .. } => match data.get(index) {
                 Some(value) => match value {
                     Some(value) => value.to_string(),
                     None => "".to_string(),
@@ -97,5 +158,19 @@ mod tests {
         let result = storage.add_value("true");
         assert_eq!(result, Ok(None));
         assert_eq!(storage.get_as_string(0), "true");
+    }
+
+    #[test]
+    fn test_time_date_storage() {
+        let column = Column::new("starttime", "Start Time", "");
+        let mut storage = ColumnStorage::TimeDateStorage {
+            column: column,
+            data: vec![],
+            format: "%Y-%m-%d %H:%M:%S".to_string(),
+        };
+
+        let result = storage.add_value("2020-01-01 00:00:00");
+        assert_eq!(result, Ok(None));
+        assert_eq!(storage.get_as_string(0), "2020-01-01 00:00:00");
     }
 }

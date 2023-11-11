@@ -10,7 +10,7 @@ pub struct Cache {
 impl Cache {
     pub fn add_row(&mut self, row: &str) -> Result<(), TypeParseError> {
         let mut error: Option<TypeParseError> = None;
-        let values: Vec<&str> = row.split(",").collect();
+        let values: Vec<&str> = row.split(',').collect();
 
         if values.len() != self.column_stores.len() {
             return Err(TypeParseError {});
@@ -46,7 +46,6 @@ impl Cache {
         let mut row: String = self
             .column_stores
             .iter()
-            .into_iter()
             .map(|column_store| column_store.get_as_string(index) + ",")
             .collect();
         row.pop(); // remove the last comma

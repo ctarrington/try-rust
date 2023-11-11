@@ -25,7 +25,7 @@ fn push_with_check<T>(
     data: &mut Vec<Option<T>>,
     parsed_value: Result<Option<T>, TypeParseError>,
 ) -> Result<Option<()>, TypeParseError> {
-    return match parsed_value {
+    match parsed_value {
         Ok(value) => {
             data.push(value);
             Ok(None)
@@ -34,9 +34,19 @@ fn push_with_check<T>(
             data.push(None);
             Err(TypeParseError {})
         }
-    };
+    }
 }
 
+fn value_to_string<T>(data: &[Option<T>], index: usize) -> String
+where
+    T: ToString,
+{
+    let wrapper = data.get(index).unwrap();
+    match wrapper {
+        Some(value) => value.to_string(),
+        None => "".to_string(),
+    }
+}
 impl ColumnStorage {
     pub fn add_value(&mut self, value: &str) -> Result<Option<()>, TypeParseError> {
         match self {
@@ -91,34 +101,10 @@ impl ColumnStorage {
 
     pub fn get_as_string(&self, index: usize) -> String {
         match self {
-            ColumnStorage::BooleanStorage { data, .. } => match data.get(index) {
-                Some(value) => match value {
-                    Some(value) => value.to_string(),
-                    None => "".to_string(),
-                },
-                None => "".to_string(),
-            },
-            ColumnStorage::F64Storage { data, .. } => match data.get(index) {
-                Some(value) => match value {
-                    Some(value) => value.to_string(),
-                    None => "".to_string(),
-                },
-                None => "".to_string(),
-            },
-            ColumnStorage::StringStorage { data, .. } => match data.get(index) {
-                Some(value) => match value {
-                    Some(value) => value.to_string(),
-                    None => "".to_string(),
-                },
-                None => "".to_string(),
-            },
-            ColumnStorage::TimeDateStorage { data, .. } => match data.get(index) {
-                Some(value) => match value {
-                    Some(value) => value.to_string(),
-                    None => "".to_string(),
-                },
-                None => "".to_string(),
-            },
+            ColumnStorage::BooleanStorage { data, .. } => value_to_string(data, index),
+            ColumnStorage::F64Storage { data, .. } => value_to_string(data, index),
+            ColumnStorage::StringStorage { data, .. } => value_to_string(data, index),
+            ColumnStorage::TimeDateStorage { data, .. } => value_to_string(data, index),
         }
     }
 }

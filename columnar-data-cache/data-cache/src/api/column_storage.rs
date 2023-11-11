@@ -21,47 +21,36 @@ pub enum ColumnStorage {
     },
 }
 
+fn push_with_check<T>(
+    data: &mut Vec<Option<T>>,
+    parsed_value: Result<Option<T>, TypeParseError>,
+) -> Result<Option<()>, TypeParseError> {
+    return match parsed_value {
+        Ok(value) => {
+            data.push(value);
+            Ok(None)
+        }
+        Err(_) => {
+            data.push(None);
+            Err(TypeParseError {})
+        }
+    };
+}
+
 impl ColumnStorage {
-    pub fn add_value(&mut self, value: &str) -> Result<Option<f64>, TypeParseError> {
+    pub fn add_value(&mut self, value: &str) -> Result<Option<()>, TypeParseError> {
         match self {
             ColumnStorage::BooleanStorage { data, column } => {
                 let parsed_value = parse_bool(value, column.default_value.as_str());
-                match parsed_value {
-                    Ok(value) => {
-                        data.push(value);
-                        Ok(None)
-                    }
-                    Err(_) => {
-                        data.push(None);
-                        Err(TypeParseError {})
-                    }
-                }
+                push_with_check(data, parsed_value)
             }
             ColumnStorage::F64Storage { data, column } => {
                 let parsed_value = parse_f64(value, column.default_value.as_str());
-                match parsed_value {
-                    Ok(value) => {
-                        data.push(value);
-                        Ok(None)
-                    }
-                    Err(_) => {
-                        data.push(None);
-                        Err(TypeParseError {})
-                    }
-                }
+                push_with_check(data, parsed_value)
             }
             ColumnStorage::StringStorage { data, column } => {
                 let parsed_value = parse_string(value, column.default_value.as_str());
-                match parsed_value {
-                    Ok(value) => {
-                        data.push(value);
-                        Ok(None)
-                    }
-                    Err(_) => {
-                        data.push(None);
-                        Err(TypeParseError {})
-                    }
-                }
+                push_with_check(data, parsed_value)
             }
             ColumnStorage::TimeDateStorage {
                 data,
@@ -69,16 +58,7 @@ impl ColumnStorage {
                 format,
             } => {
                 let parsed_value = parse_date_time(value, column.default_value.as_str(), format);
-                match parsed_value {
-                    Ok(value) => {
-                        data.push(value);
-                        Ok(None)
-                    }
-                    Err(_) => {
-                        data.push(None);
-                        Err(TypeParseError {})
-                    }
-                }
+                push_with_check(data, parsed_value)
             }
         }
     }
@@ -151,7 +131,7 @@ mod tests {
     fn test_boolean_storage() {
         let column = Column::new("verified", "Verified", "false");
         let mut storage = ColumnStorage::BooleanStorage {
-            column: column,
+            column,
             data: vec![],
         };
 
@@ -164,7 +144,7 @@ mod tests {
     fn test_time_date_storage() {
         let column = Column::new("starttime", "Start Time", "");
         let mut storage = ColumnStorage::TimeDateStorage {
-            column: column,
+            column,
             data: vec![],
             format: "%Y-%m-%d %H:%M:%S".to_string(),
         };

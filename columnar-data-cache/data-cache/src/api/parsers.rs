@@ -50,14 +50,15 @@ pub fn parse_date_time(
     default_value: &str,
     format: &str,
 ) -> Result<Option<NaiveDateTime>, TypeParseError> {
-    let the_value = get_value(default_value, value).unwrap();
-    if the_value.is_empty() {
-        return Ok(None);
+    let the_value = get_value(default_value, value);
+    match the_value {
+        Some(value) => {
+            return NaiveDateTime::parse_from_str(value.as_str(), format)
+                .map(Some)
+                .map_err(|_| TypeParseError {});
+        }
+        _ => Ok(None),
     }
-
-    NaiveDateTime::parse_from_str(the_value.as_str(), format)
-        .map(Some)
-        .map_err(|_| TypeParseError {})
 }
 
 #[cfg(test)]

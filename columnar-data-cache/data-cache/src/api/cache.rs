@@ -46,7 +46,7 @@ impl Cache {
         let mut row: String = self
             .column_stores
             .iter()
-            .map(|column_store| column_store.get_as_string(index) + ",")
+            .map(|column_store| column_store.get_as_string(index).unwrap() + ",")
             .collect();
         row.pop(); // remove the last comma
         Ok(row)
@@ -58,9 +58,8 @@ mod tests {
     use super::*;
     use crate::api::column::Column;
 
-    #[test]
-    fn test_simple() {
-        let mut cache = Cache {
+    fn create_cache() -> Cache {
+        Cache {
             column_stores: vec![
                 ColumnStorage::StringStorage {
                     column: Column::new("name", "Name", "unknown"),
@@ -80,7 +79,12 @@ mod tests {
                     format: "%Y-%m-%d %H:%M:%S".parse().unwrap(),
                 },
             ],
-        };
+        }
+    }
+
+    #[test]
+    fn test_simple() {
+        let mut cache = create_cache();
 
         assert!(cache.row_as_csv(0).is_err());
         cache.add_row("fred,true, 1, 2019-01-01 00:00:00").unwrap();
@@ -88,8 +92,31 @@ mod tests {
             cache.row_as_csv(0).unwrap(),
             "fred,true,1,2019-01-01 00:00:00"
         );
-        assert!(cache.add_row("wilma,false, 2020-01-01 00:00:00").is_err());
+    }
 
+    #[test]
+    fn test_invalid_rows() {
+        let mut cache = create_cache();
+
+        assert!(cache.add_row("wilma,false, 2020-01-01 00:00:00,1").is_err());
+        assert!(cache.add_row("").is_err());
+        assert!(cache.add_row("wilma,false, 2020-01-01 00:00:00,").is_err());
+    }
+
+    #[test]
+    fn test_empty() {
+        let mut cache = create_cache();
+
+        cache.add_row(",,,").unwrap();
+        assert_eq!(cache.row_as_csv(0).unwrap(), "unknown,false,0,");
+    }
+
+    #[test]
+    fn test_valid_after_invalid() {
+        let mut cache = create_cache();
+
+        assert!(cache.add_row("wilma,false,1").is_err());
+        cache.add_row("fred,true, 1, 2019-01-01 00:00:00").unwrap();
         assert_eq!(
             cache.row_as_csv(0).unwrap(),
             "fred,true,1,2019-01-01 00:00:00"

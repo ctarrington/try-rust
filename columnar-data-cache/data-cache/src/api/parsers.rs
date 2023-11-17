@@ -1,5 +1,8 @@
 use chrono::NaiveDateTime;
 
+/// The parsers module contains type specific functions that parse a string value into a specific type.
+/// Each function returns a Result<Option<T>, TypeParseError> where T is the desired output type.
+
 // This is a helper function that returns the value of a column based on the passed value and the
 // default value for the column definition.
 fn get_value(value: &str, default_value: &str) -> Option<String> {

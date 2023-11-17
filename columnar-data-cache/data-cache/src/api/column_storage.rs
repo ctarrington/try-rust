@@ -21,6 +21,11 @@ pub enum ColumnStorage {
         data: Vec<Option<chrono::NaiveDateTime>>,
         format: String,
     },
+    EnumeratedStorage {
+        column: Column,
+        data: Vec<Option<String>>,
+        allowed_values: Vec<String>,
+    },
 }
 
 fn push_with_check<T>(
@@ -78,6 +83,28 @@ impl ColumnStorage {
                 let parsed_value = parse_date_time(value, column.default_value.as_str(), format);
                 push_with_check(data, parsed_value)
             }
+            ColumnStorage::EnumeratedStorage {
+                data,
+                column,
+                allowed_values,
+            } => {
+                let parsed_value = parse_string(value, column.default_value.as_str());
+                match parsed_value {
+                    Ok(Some(value)) => {
+                        if allowed_values.contains(&value) {
+                            data.push(Some(value));
+                            Ok(None)
+                        } else {
+                            data.push(None);
+                            Err(TypeParseError {})
+                        }
+                    }
+                    _ => {
+                        data.push(None);
+                        Err(TypeParseError {})
+                    }
+                }
+            }
         }
     }
 
@@ -87,6 +114,7 @@ impl ColumnStorage {
             ColumnStorage::F64Storage { data, .. } => data.len(),
             ColumnStorage::StringStorage { data, .. } => data.len(),
             ColumnStorage::TimeDateStorage { data, .. } => data.len(),
+            ColumnStorage::EnumeratedStorage { data, .. } => data.len(),
         }
     }
 
@@ -104,6 +132,9 @@ impl ColumnStorage {
             ColumnStorage::TimeDateStorage { data, .. } => {
                 data.pop();
             }
+            ColumnStorage::EnumeratedStorage { data, .. } => {
+                data.pop();
+            }
         }
     }
 
@@ -113,6 +144,7 @@ impl ColumnStorage {
             ColumnStorage::F64Storage { data, .. } => value_to_string(data, index),
             ColumnStorage::StringStorage { data, .. } => value_to_string(data, index),
             ColumnStorage::TimeDateStorage { data, .. } => value_to_string(data, index),
+            ColumnStorage::EnumeratedStorage { data, .. } => value_to_string(data, index),
         }
     }
 }
@@ -147,6 +179,17 @@ mod tests {
             column: Column::new("starttime", "Start Time", ""),
             data: vec![],
             format: "%Y-%m-%d %H:%M:%S".to_string(),
+        }
+    }
+
+    fn create_enumerated_storage(
+        allowed_values: Vec<String>,
+        default_value: String,
+    ) -> ColumnStorage {
+        ColumnStorage::EnumeratedStorage {
+            column: Column::new("flavor", "Flavor", default_value.as_str()),
+            data: vec![],
+            allowed_values,
         }
     }
 
@@ -219,6 +262,30 @@ mod tests {
             Ok("2020-01-01 00:00:00".to_string())
         );
         assert_eq!(storage.get_as_string(1), Ok("".to_string()));
+    }
+
+    #[test]
+    fn test_enumerated_storage() {
+        let mut storage = create_enumerated_storage(
+            vec![
+                "red".to_string(),
+                "green".to_string(),
+                "blue".to_string(),
+                "purple".to_string(),
+            ],
+            "purple".to_string(),
+        );
+
+        assert_eq!(storage.add_value("red"), Ok(None));
+        assert_eq!(storage.add_value("green"), Ok(None));
+        assert_eq!(storage.add_value("blue"), Ok(None));
+        assert_eq!(storage.add_value("xyz"), Err(TypeParseError {}));
+        assert_eq!(storage.add_value(""), Ok(None));
+        assert_eq!(storage.get_as_string(0), Ok("red".to_string()));
+        assert_eq!(storage.get_as_string(1), Ok("green".to_string()));
+        assert_eq!(storage.get_as_string(2), Ok("blue".to_string()));
+        assert_eq!(storage.get_as_string(3), Ok("".to_string()));
+        assert_eq!(storage.get_as_string(4), Ok("purple".to_string()));
     }
 
     #[test]

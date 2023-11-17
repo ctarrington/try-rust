@@ -78,6 +78,15 @@ mod tests {
                     data: vec![],
                     format: "%Y-%m-%d %H:%M:%S".parse().unwrap(),
                 },
+                ColumnStorage::EnumeratedStorage {
+                    column: Column::new("flavor", "Flavor", "vanilla"),
+                    data: vec![],
+                    allowed_values: vec![
+                        "vanilla".to_string(),
+                        "chocolate".to_string(),
+                        "strawberry".to_string(),
+                    ],
+                },
             ],
         }
     }
@@ -87,10 +96,12 @@ mod tests {
         let mut cache = create_cache();
 
         assert!(cache.row_as_csv(0).is_err());
-        cache.add_row("fred,true, 1, 2019-01-01 00:00:00").unwrap();
+        cache
+            .add_row("fred,true, 1, 2019-01-01 00:00:00,chocolate")
+            .unwrap();
         assert_eq!(
             cache.row_as_csv(0).unwrap(),
-            "fred,true,1,2019-01-01 00:00:00"
+            "fred,true,1,2019-01-01 00:00:00,chocolate"
         );
     }
 
@@ -107,8 +118,8 @@ mod tests {
     fn test_empty() {
         let mut cache = create_cache();
 
-        cache.add_row(",,,").unwrap();
-        assert_eq!(cache.row_as_csv(0).unwrap(), "unknown,false,0,");
+        cache.add_row(",,,,").unwrap();
+        assert_eq!(cache.row_as_csv(0).unwrap(), "unknown,false,0,,vanilla");
     }
 
     #[test]
@@ -116,10 +127,12 @@ mod tests {
         let mut cache = create_cache();
 
         assert!(cache.add_row("wilma,false,1").is_err());
-        cache.add_row("fred,true, 1, 2019-01-01 00:00:00").unwrap();
+        cache
+            .add_row("fred,true, 1, 2019-01-01 00:00:00,strawberry")
+            .unwrap();
         assert_eq!(
             cache.row_as_csv(0).unwrap(),
-            "fred,true,1,2019-01-01 00:00:00"
+            "fred,true,1,2019-01-01 00:00:00,strawberry"
         );
     }
 }

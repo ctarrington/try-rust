@@ -1,14 +1,16 @@
 use crate::api::column_storage::ColumnStorage;
 use crate::api::parsers::TypeParseError;
+use uuid::Uuid;
 
 #[derive(Debug, PartialEq)]
 pub struct CacheAccessError {}
 pub struct Cache {
     column_stores: Vec<ColumnStorage>,
+    guids: Vec<Uuid>,
 }
 
 impl Cache {
-    pub fn add_row(&mut self, row: &str) -> Result<(), TypeParseError> {
+    pub fn add_row(&mut self, row: &str) -> Result<Uuid, TypeParseError> {
         let mut error: Option<TypeParseError> = None;
         let values: Vec<&str> = row.split(',').collect();
 
@@ -30,7 +32,9 @@ impl Cache {
             }
             Err(error)
         } else {
-            Ok(())
+            let guid = Uuid::new_v4();
+            self.guids.push(guid);
+            Ok(guid)
         }
     }
 
@@ -60,6 +64,7 @@ mod tests {
 
     fn create_cache() -> Cache {
         Cache {
+            guids: vec![],
             column_stores: vec![
                 ColumnStorage::StringStorage {
                     column: Column::new("name", "Name", "unknown"),
@@ -74,7 +79,7 @@ mod tests {
                     data: vec![],
                 },
                 ColumnStorage::TimeDateStorage {
-                    column: Column::new("starttime", "Start Time", ""),
+                    column: Column::new("start_time", "Start Time", ""),
                     data: vec![],
                     format: "%Y-%m-%d %H:%M:%S".parse().unwrap(),
                 },

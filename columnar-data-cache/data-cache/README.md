@@ -1,9 +1,11 @@
 # data-cache
 
 ## todo
-* use constructor for storage?
-* add sorting
-* add filtering
-* add a snapshot - apply filters, apply sort, select columns snap at time
-    * add the ability to get a vector of values from a snapshot's column
+* use constructor for storage? 
+* allow updates of values by guid? by index?
+* alllow replacement of row by guid? by index?
+* add a snapshot - specify filters, select columns snap at time
+    * add filtering
+    * add the ability to get a vector of values from a snapshot's column?
+    * add sorting
 

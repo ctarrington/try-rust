@@ -6,7 +6,7 @@ fn test_new_cache() {
     cache.add_string_column("name", "Name", "unknown");
     cache.add_boolean_column("verified", "Verified", "false");
     cache.add_f64_column("age", "Age", "0");
-    cache.add_time_date_column("start_time", "Start Time", "%Y-%m-%d %H:%M:%S");
+    cache.add_time_date_column("start_time", "Start Time", "%Y-%m-%d %H:%M:%S", "");
 
     let flavors = vec![
         "vanilla".to_string(),
@@ -26,6 +26,12 @@ fn test_new_cache() {
     assert_eq!(
         cache.row_as_csv(0).unwrap(),
         "ted,false,4,2020-02-02 05:06:07,chocolate"
+    );
+
+    cache.add_string_column("title", "Title", "unknown");
+    assert_eq!(
+        cache.row_as_csv(0).unwrap(),
+        "ted,false,4,2020-02-02 05:06:07,chocolate,unknown"
     );
 }
 

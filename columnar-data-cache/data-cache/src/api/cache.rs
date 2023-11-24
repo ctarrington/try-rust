@@ -24,33 +24,61 @@ impl Cache {
         }
     }
 
+    fn fill_in_column_store(&self, column_store: &mut ColumnStorage, default_value: &str) {
+        if !self.column_stores.is_empty() {
+            let row_count = self.column_stores.get(0).unwrap().get_length();
+
+            for _ in 0..row_count {
+                column_store.add_value(default_value).unwrap();
+            }
+        }
+    }
+
     pub fn add_string_column(&mut self, name: &str, display_name: &str, default_value: &str) {
-        self.column_stores.push(ColumnStorage::StringStorage {
+        let mut new_column_store = ColumnStorage::StringStorage {
             column: Column::new(name, display_name, default_value),
             data: vec![],
-        });
+        };
+
+        self.fill_in_column_store(&mut new_column_store, default_value);
+        self.column_stores.push(new_column_store);
     }
 
     pub fn add_boolean_column(&mut self, name: &str, display_name: &str, default_value: &str) {
-        self.column_stores.push(ColumnStorage::BooleanStorage {
+        let mut new_column_store = ColumnStorage::BooleanStorage {
             column: Column::new(name, display_name, default_value),
             data: vec![],
-        });
+        };
+
+        self.fill_in_column_store(&mut new_column_store, default_value);
+        self.column_stores.push(new_column_store);
     }
 
     pub fn add_f64_column(&mut self, name: &str, display_name: &str, default_value: &str) {
-        self.column_stores.push(ColumnStorage::F64Storage {
+        let mut new_column_store = ColumnStorage::F64Storage {
             column: Column::new(name, display_name, default_value),
             data: vec![],
-        });
+        };
+
+        self.fill_in_column_store(&mut new_column_store, default_value);
+        self.column_stores.push(new_column_store);
     }
 
-    pub fn add_time_date_column(&mut self, name: &str, display_name: &str, format: &str) {
-        self.column_stores.push(ColumnStorage::TimeDateStorage {
+    pub fn add_time_date_column(
+        &mut self,
+        name: &str,
+        display_name: &str,
+        format: &str,
+        default_value: &str,
+    ) {
+        let mut new_column_store = ColumnStorage::TimeDateStorage {
             column: Column::new(name, display_name, ""),
             data: vec![],
             format: format.parse().unwrap(),
-        });
+        };
+
+        self.fill_in_column_store(&mut new_column_store, default_value);
+        self.column_stores.push(new_column_store);
     }
 
     pub fn add_enumerated_column(
@@ -128,7 +156,7 @@ mod tests {
         cache.add_string_column("name", "Name", "unknown");
         cache.add_boolean_column("verified", "Verified", "false");
         cache.add_f64_column("age", "Age", "0");
-        cache.add_time_date_column("start_time", "Start Time", "%Y-%m-%d %H:%M:%S");
+        cache.add_time_date_column("start_time", "Start Time", "%Y-%m-%d %H:%M:%S", "");
         cache.add_enumerated_column("flavor", "Flavor", "vanilla", flavors);
         cache
     }
@@ -179,6 +207,28 @@ mod tests {
         assert_eq!(
             cache.row_as_csv(0).unwrap(),
             "fred,true,1,2019-01-01 00:00:00,strawberry"
+        );
+    }
+
+    #[test]
+    fn test_add_column_to_existing_cache() {
+        let mut cache = Cache::new();
+        cache.add_string_column("name", "Name", "unknown");
+        cache.add_row("fred").unwrap();
+        cache.add_row("wilma").unwrap();
+        assert_eq!(cache.row_as_csv(0).unwrap(), "fred");
+        assert_eq!(cache.row_as_csv(1).unwrap(), "wilma");
+        cache.add_f64_column("height", "Height", "0");
+        cache.add_row("barney,60").unwrap();
+        assert_eq!(cache.row_as_csv(0).unwrap(), "fred,0");
+        assert_eq!(cache.row_as_csv(1).unwrap(), "wilma,0");
+        assert_eq!(cache.row_as_csv(2).unwrap(), "barney,60");
+        cache.add_time_date_column("start_time", "Start Time", "%Y-%m-%d %H:%M:%S", "");
+        assert_eq!(cache.row_as_csv(0).unwrap(), "fred,0,");
+        cache.add_row("pebbles,10,2020-01-01 00:00:00").unwrap();
+        assert_eq!(
+            cache.row_as_csv(3).unwrap(),
+            "pebbles,10,2020-01-01 00:00:00"
         );
     }
 }

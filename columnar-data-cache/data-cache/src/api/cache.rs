@@ -1,3 +1,4 @@
+use crate::api::column::Column;
 use crate::api::column_storage::ColumnStorage;
 use crate::api::parsers::TypeParseError;
 use uuid::Uuid;
@@ -9,7 +10,63 @@ pub struct Cache {
     guids: Vec<Uuid>,
 }
 
+impl Default for Cache {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Cache {
+    pub fn new() -> Self {
+        Cache {
+            column_stores: vec![],
+            guids: vec![],
+        }
+    }
+
+    pub fn add_string_column(&mut self, name: &str, display_name: &str, default_value: &str) {
+        self.column_stores.push(ColumnStorage::StringStorage {
+            column: Column::new(name, display_name, default_value),
+            data: vec![],
+        });
+    }
+
+    pub fn add_boolean_column(&mut self, name: &str, display_name: &str, default_value: &str) {
+        self.column_stores.push(ColumnStorage::BooleanStorage {
+            column: Column::new(name, display_name, default_value),
+            data: vec![],
+        });
+    }
+
+    pub fn add_f64_column(&mut self, name: &str, display_name: &str, default_value: &str) {
+        self.column_stores.push(ColumnStorage::F64Storage {
+            column: Column::new(name, display_name, default_value),
+            data: vec![],
+        });
+    }
+
+    pub fn add_time_date_column(&mut self, name: &str, display_name: &str, format: &str) {
+        self.column_stores.push(ColumnStorage::TimeDateStorage {
+            column: Column::new(name, display_name, ""),
+            data: vec![],
+            format: format.parse().unwrap(),
+        });
+    }
+
+    pub fn add_enumerated_column(
+        &mut self,
+        name: &str,
+        display_name: &str,
+        default_value: &str,
+        allowed_values: Vec<String>,
+    ) {
+        self.column_stores.push(ColumnStorage::EnumeratedStorage {
+            column: Column::new(name, display_name, default_value),
+            data: vec![],
+            allowed_values,
+        });
+    }
+
     pub fn add_row(&mut self, row: &str) -> Result<Uuid, TypeParseError> {
         let mut error: Option<TypeParseError> = None;
         let values: Vec<&str> = row.split(',').collect();
@@ -60,40 +117,20 @@ impl Cache {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::api::column::Column;
 
     fn create_cache() -> Cache {
-        Cache {
-            guids: vec![],
-            column_stores: vec![
-                ColumnStorage::StringStorage {
-                    column: Column::new("name", "Name", "unknown"),
-                    data: vec![],
-                },
-                ColumnStorage::BooleanStorage {
-                    column: Column::new("verified", "Verified", "false"),
-                    data: vec![],
-                },
-                ColumnStorage::F64Storage {
-                    column: Column::new("age", "Age", "0"),
-                    data: vec![],
-                },
-                ColumnStorage::TimeDateStorage {
-                    column: Column::new("start_time", "Start Time", ""),
-                    data: vec![],
-                    format: "%Y-%m-%d %H:%M:%S".parse().unwrap(),
-                },
-                ColumnStorage::EnumeratedStorage {
-                    column: Column::new("flavor", "Flavor", "vanilla"),
-                    data: vec![],
-                    allowed_values: vec![
-                        "vanilla".to_string(),
-                        "chocolate".to_string(),
-                        "strawberry".to_string(),
-                    ],
-                },
-            ],
-        }
+        let flavors = vec![
+            "vanilla".to_string(),
+            "chocolate".to_string(),
+            "strawberry".to_string(),
+        ];
+        let mut cache = Cache::new();
+        cache.add_string_column("name", "Name", "unknown");
+        cache.add_boolean_column("verified", "Verified", "false");
+        cache.add_f64_column("age", "Age", "0");
+        cache.add_time_date_column("start_time", "Start Time", "%Y-%m-%d %H:%M:%S");
+        cache.add_enumerated_column("flavor", "Flavor", "vanilla", flavors);
+        cache
     }
 
     #[test]
@@ -104,10 +141,14 @@ mod tests {
         cache
             .add_row("fred,true, 1, 2019-01-01 00:00:00,chocolate")
             .unwrap();
+        cache.add_row(",,,,").unwrap();
+
         assert_eq!(
             cache.row_as_csv(0).unwrap(),
             "fred,true,1,2019-01-01 00:00:00,chocolate"
         );
+
+        assert_eq!(cache.row_as_csv(1).unwrap(), "unknown,false,0,,vanilla");
     }
 
     #[test]

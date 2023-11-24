@@ -91,13 +91,20 @@ impl ColumnStorage {
                 let parsed_value = parse_string(value, column.default_value.as_str());
                 match parsed_value {
                     Ok(Some(value)) => {
-                        if allowed_values.contains(&value) {
+                        if value.is_empty() {
+                            data.push(None);
+                            Ok(None)
+                        } else if allowed_values.contains(&value) {
                             data.push(Some(value));
                             Ok(None)
                         } else {
                             data.push(None);
                             Err(TypeParseError {})
                         }
+                    }
+                    Ok(None) => {
+                        data.push(None);
+                        Ok(None)
                     }
                     _ => {
                         data.push(None);

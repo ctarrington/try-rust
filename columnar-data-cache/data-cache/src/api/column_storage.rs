@@ -125,6 +125,31 @@ impl ColumnStorage {
         }
     }
 
+    pub fn remove_value(&mut self, index: usize) -> Result<(), IndexRangeError> {
+        match self {
+            ColumnStorage::BooleanStorage { data, .. } => {
+                data.remove(index);
+                Ok(())
+            }
+            ColumnStorage::F64Storage { data, .. } => {
+                data.remove(index);
+                Ok(())
+            }
+            ColumnStorage::StringStorage { data, .. } => {
+                data.remove(index);
+                Ok(())
+            }
+            ColumnStorage::TimeDateStorage { data, .. } => {
+                data.remove(index);
+                Ok(())
+            }
+            ColumnStorage::EnumeratedStorage { data, .. } => {
+                data.remove(index);
+                Ok(())
+            }
+        }
+    }
+
     pub fn remove_last_value(&mut self) {
         match self {
             ColumnStorage::BooleanStorage { data, .. } => {
@@ -152,6 +177,16 @@ impl ColumnStorage {
             ColumnStorage::StringStorage { data, .. } => value_to_string(data, index),
             ColumnStorage::TimeDateStorage { data, .. } => value_to_string(data, index),
             ColumnStorage::EnumeratedStorage { data, .. } => value_to_string(data, index),
+        }
+    }
+
+    pub fn get_default_value(&self) -> String {
+        match self {
+            ColumnStorage::BooleanStorage { column, .. } => column.default_value.clone(),
+            ColumnStorage::F64Storage { column, .. } => column.default_value.clone(),
+            ColumnStorage::StringStorage { column, .. } => column.default_value.clone(),
+            ColumnStorage::TimeDateStorage { column, .. } => column.default_value.clone(),
+            ColumnStorage::EnumeratedStorage { column, .. } => column.default_value.clone(),
         }
     }
 }

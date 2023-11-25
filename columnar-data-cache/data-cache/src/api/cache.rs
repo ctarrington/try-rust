@@ -24,14 +24,12 @@ impl Cache {
         }
     }
 
-    fn fill_in_column_store(&self, column_store: &mut ColumnStorage, default_value: &str) {
-        if !self.column_stores.is_empty() {
-            let row_count = self.column_stores.get(0).unwrap().get_length();
-
-            for _ in 0..row_count {
-                column_store.add_value(default_value).unwrap();
-            }
+    pub fn row_count(&self) -> usize {
+        if self.column_stores.is_empty() {
+            return 0;
         }
+
+        self.column_stores.get(0).unwrap().get_length()
     }
 
     pub fn add_string_column(&mut self, name: &str, display_name: &str, default_value: &str) {
@@ -40,7 +38,7 @@ impl Cache {
             data: vec![],
         };
 
-        self.fill_in_column_store(&mut new_column_store, default_value);
+        self.fill_in_column_store(&mut new_column_store);
         self.column_stores.push(new_column_store);
     }
 
@@ -50,7 +48,7 @@ impl Cache {
             data: vec![],
         };
 
-        self.fill_in_column_store(&mut new_column_store, default_value);
+        self.fill_in_column_store(&mut new_column_store);
         self.column_stores.push(new_column_store);
     }
 
@@ -60,7 +58,7 @@ impl Cache {
             data: vec![],
         };
 
-        self.fill_in_column_store(&mut new_column_store, default_value);
+        self.fill_in_column_store(&mut new_column_store);
         self.column_stores.push(new_column_store);
     }
 
@@ -72,12 +70,12 @@ impl Cache {
         default_value: &str,
     ) {
         let mut new_column_store = ColumnStorage::TimeDateStorage {
-            column: Column::new(name, display_name, ""),
+            column: Column::new(name, display_name, default_value),
             data: vec![],
             format: format.parse().unwrap(),
         };
 
-        self.fill_in_column_store(&mut new_column_store, default_value);
+        self.fill_in_column_store(&mut new_column_store);
         self.column_stores.push(new_column_store);
     }
 
@@ -90,7 +88,7 @@ impl Cache {
         allowed_values: Vec<String>,
     ) {
         let mut full_allowed_values = allowed_values.clone();
-        if !allowed_values.contains(&default_value.to_string()) {
+        if !default_value.is_empty() && !allowed_values.contains(&default_value.to_string()) {
             full_allowed_values.push(default_value.to_string());
         }
 
@@ -99,11 +97,66 @@ impl Cache {
             data: vec![],
             allowed_values: full_allowed_values,
         };
-        self.fill_in_column_store(&mut new_column_store, default_value);
+
+        self.fill_in_column_store(&mut new_column_store);
         self.column_stores.push(new_column_store);
     }
 
-    pub fn add_row(&mut self, row: &str) -> Result<Uuid, TypeParseError> {
+    pub fn update_row(&mut self, guid: &Uuid, row: &str) -> Result<Uuid, TypeParseError> {
+        let index = self.find_index(guid);
+        if index.is_none() {
+            // todo: wrong error???
+            return Err(TypeParseError {});
+        }
+
+        self.add_row(guid, row)?; // returns error if row is invalid
+        self.remove_row_by_index(index.unwrap()).unwrap();
+
+        Ok(*guid)
+    }
+    pub fn create_row(&mut self, row: &str) -> Result<Uuid, TypeParseError> {
+        let guid = Uuid::new_v4();
+        self.add_row(&guid, row)
+    }
+
+    pub fn csv_for_guid(&self, guid: &Uuid) -> Result<String, CacheAccessError> {
+        let index = self.find_index(guid);
+        if index.is_none() {
+            return Err(CacheAccessError {});
+        }
+
+        self.csv_for_index(index.unwrap())
+    }
+
+    fn fill_in_column_store(&self, column_store: &mut ColumnStorage) {
+        let default_value = column_store.get_default_value();
+        for _ in 0..self.row_count() {
+            column_store.add_value(&default_value).unwrap();
+        }
+    }
+
+    fn find_index(&self, guid: &Uuid) -> Option<usize> {
+        self.guids.iter().position(|g| g == guid)
+    }
+
+    fn remove_row_by_index(&mut self, index: usize) -> Result<(), CacheAccessError> {
+        if self.column_stores.is_empty() {
+            return Err(CacheAccessError {});
+        }
+
+        if self.row_count() <= index {
+            return Err(CacheAccessError {});
+        }
+
+        for column_store in self.column_stores.iter_mut() {
+            column_store.remove_value(index).unwrap();
+        }
+
+        self.guids.remove(index);
+        Ok(())
+    }
+
+    fn add_row(&mut self, guid: &Uuid, row: &str) -> Result<Uuid, TypeParseError> {
         let mut error: Option<TypeParseError> = None;
         let values: Vec<&str> = row.split(',').collect();
 
@@ -125,18 +178,17 @@ impl Cache {
             }
             Err(error)
         } else {
-            let guid = Uuid::new_v4();
-            self.guids.push(guid);
-            Ok(guid)
+            self.guids.push(*guid);
+            Ok(*guid)
         }
     }
 
-    pub fn row_as_csv(&self, index: usize) -> Result<String, CacheAccessError> {
+    fn csv_for_index(&self, index: usize) -> Result<String, CacheAccessError> {
         if self.column_stores.is_empty() {
             return Err(CacheAccessError {});
         }
 
-        if self.column_stores.get(0).unwrap().get_length() <= index {
+        if self.row_count() <= index {
             return Err(CacheAccessError {});
         }
 

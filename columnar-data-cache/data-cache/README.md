@@ -7,10 +7,16 @@
     * if default value is not in allowed values then add it X
 
 
-* allow updates of values by guid? by index?
-* allow replacement of row by guid? by index?
+* return the guid in the add row method X 
+* allow replacement of row by guid X
+
+* allow updates of cell value by guid  ??
+
 * add a snapshot - specify filters, select columns snap at time
     * add filtering
     * add the ability to get a vector of values from a snapshot's column?
     * add sorting
+
+
+* use criterion crate for benchmarks
 

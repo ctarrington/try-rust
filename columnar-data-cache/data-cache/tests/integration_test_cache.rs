@@ -1,4 +1,5 @@
 use data_cache::api::cache::Cache;
+use uuid::Uuid;
 
 fn create_flavors() -> Vec<String> {
     vec![
@@ -22,47 +23,56 @@ fn create_cache() -> Cache {
 fn test_simple() {
     let mut cache = create_cache();
 
-    assert!(cache.row_as_csv(0).is_err());
-    cache
-        .add_row("fred,true, 1, 2019-01-01 00:00:00,chocolate")
+    let fred_guid = cache
+        .create_row("fred,true, 1, 2019-01-01 00:00:00,chocolate")
         .unwrap();
-    cache.add_row(",,,,").unwrap();
+    let empty_guid = cache.create_row(",,,,").unwrap();
 
     assert_eq!(
-        cache.row_as_csv(0).unwrap(),
+        cache.csv_for_guid(&fred_guid).unwrap(),
         "fred,true,1,2019-01-01 00:00:00,chocolate"
     );
 
-    assert_eq!(cache.row_as_csv(1).unwrap(), "unknown,false,0,,vanilla");
+    assert_eq!(
+        cache.csv_for_guid(&empty_guid).unwrap(),
+        "unknown,false,0,,vanilla"
+    );
 }
 
 #[test]
 fn test_invalid_rows() {
     let mut cache = create_cache();
 
-    assert!(cache.add_row("wilma,false, 2020-01-01 00:00:00,1").is_err());
-    assert!(cache.add_row("").is_err());
-    assert!(cache.add_row("wilma,false, 2020-01-01 00:00:00,").is_err());
+    assert!(cache
+        .create_row("wilma,false, 2020-01-01 00:00:00,1")
+        .is_err());
+    assert!(cache.create_row("").is_err());
+    assert!(cache
+        .create_row("wilma,false, 2020-01-01 00:00:00,")
+        .is_err());
 }
 
 #[test]
 fn test_empty() {
     let mut cache = create_cache();
 
-    cache.add_row(",,,,").unwrap();
-    assert_eq!(cache.row_as_csv(0).unwrap(), "unknown,false,0,,vanilla");
+    let guid = cache.create_row(",,,,").unwrap();
+    assert_eq!(
+        cache.csv_for_guid(&guid).unwrap(),
+        "unknown,false,0,,vanilla"
+    );
 }
 
 #[test]
 fn test_valid_after_invalid() {
     let mut cache = create_cache();
 
-    assert!(cache.add_row("wilma,false,1").is_err());
-    cache
-        .add_row("fred,true, 1, 2019-01-01 00:00:00,strawberry")
+    assert!(cache.create_row("wilma,false,1").is_err());
+    let fred_guid = cache
+        .create_row("fred,true, 1, 2019-01-01 00:00:00,strawberry")
         .unwrap();
     assert_eq!(
-        cache.row_as_csv(0).unwrap(),
+        cache.csv_for_guid(&fred_guid).unwrap(),
         "fred,true,1,2019-01-01 00:00:00,strawberry"
     );
 }
@@ -72,8 +82,8 @@ fn test_default_gets_added() {
     let flavors = create_flavors(); // does not include "fudge ripple"
     let mut cache = Cache::new();
     cache.add_enumerated_column("flavor", "Flavor", "fudge ripple", flavors);
-    cache.add_row("").unwrap();
-    assert_eq!(cache.row_as_csv(0).unwrap(), "fudge ripple");
+    let guid = cache.create_row("").unwrap();
+    assert_eq!(cache.csv_for_guid(&guid).unwrap(), "fudge ripple");
 }
 
 #[test]
@@ -81,43 +91,66 @@ fn test_empty_default() {
     let flavors = create_flavors();
     let mut cache = Cache::new();
     cache.add_enumerated_column("flavor", "Flavor", "", flavors);
-    cache.add_row("").unwrap();
-    assert_eq!(cache.row_as_csv(0).unwrap(), "");
+    let guid = cache.create_row("").unwrap();
+    assert_eq!(cache.csv_for_guid(&guid).unwrap(), "");
 }
 
 #[test]
 fn test_add_column_to_existing_cache() {
     let mut cache = Cache::new();
     cache.add_string_column("name", "Name", "unknown");
-    cache.add_row("fred").unwrap();
-    cache.add_row("wilma").unwrap();
-    assert_eq!(cache.row_as_csv(0).unwrap(), "fred");
-    assert_eq!(cache.row_as_csv(1).unwrap(), "wilma");
+    let fred_guid = cache.create_row("fred").unwrap();
+    let wilma_guid = cache.create_row("wilma").unwrap();
+    assert_eq!(cache.csv_for_guid(&fred_guid).unwrap(), "fred");
+    assert_eq!(cache.csv_for_guid(&wilma_guid).unwrap(), "wilma");
 
     cache.add_f64_column("height", "Height", "0");
-    cache.add_row("barney,60").unwrap();
-    assert_eq!(cache.row_as_csv(0).unwrap(), "fred,0");
-    assert_eq!(cache.row_as_csv(1).unwrap(), "wilma,0");
-    assert_eq!(cache.row_as_csv(2).unwrap(), "barney,60");
+    let barney_guid = cache.create_row("barney,60").unwrap();
+    assert_eq!(cache.csv_for_guid(&fred_guid).unwrap(), "fred,0");
+    assert_eq!(cache.csv_for_guid(&wilma_guid).unwrap(), "wilma,0");
+    assert_eq!(cache.csv_for_guid(&barney_guid).unwrap(), "barney,60");
 
-    cache.add_time_date_column("start_time", "Start Time", "%Y-%m-%d %H:%M:%S", "");
-    assert_eq!(cache.row_as_csv(0).unwrap(), "fred,0,");
-    cache.add_row("pebbles,10,2020-01-01 00:00:00").unwrap();
+    cache.add_time_date_column(
+        "start_time",
+        "Start Time",
+        "%Y-%m-%d %H:%M:%S",
+        "1999-01-01 00:00:00",
+    );
     assert_eq!(
-        cache.row_as_csv(3).unwrap(),
+        cache.csv_for_guid(&fred_guid).unwrap(),
+        "fred,0,1999-01-01 00:00:00"
+    );
+    assert_eq!(
+        cache.csv_for_guid(&wilma_guid).unwrap(),
+        "wilma,0,1999-01-01 00:00:00"
+    );
+    assert_eq!(
+        cache.csv_for_guid(&barney_guid).unwrap(),
+        "barney,60,1999-01-01 00:00:00"
+    );
+
+    let pebbles_guid = cache.create_row("pebbles,10,2020-01-01 00:00:00").unwrap();
+    assert_eq!(
+        cache.csv_for_guid(&pebbles_guid).unwrap(),
         "pebbles,10,2020-01-01 00:00:00"
     );
 
     cache.add_boolean_column("verified", "Verified", "false");
-    assert_eq!(cache.row_as_csv(0).unwrap(), "fred,0,,false");
+    assert_eq!(
+        cache.csv_for_guid(&fred_guid).unwrap(),
+        "fred,0,1999-01-01 00:00:00,false"
+    );
 
     cache.add_enumerated_column("flavor", "Flavor", "vanilla", create_flavors());
-    assert_eq!(cache.row_as_csv(0).unwrap(), "fred,0,,false,vanilla");
+    assert_eq!(
+        cache.csv_for_guid(&fred_guid).unwrap(),
+        "fred,0,1999-01-01 00:00:00,false,vanilla"
+    );
 
     cache.add_string_column("address", "Address", "unknown");
     assert_eq!(
-        cache.row_as_csv(0).unwrap(),
-        "fred,0,,false,vanilla,unknown"
+        cache.csv_for_guid(&fred_guid).unwrap(),
+        "fred,0,1999-01-01 00:00:00,false,vanilla,unknown"
     );
 }
 
@@ -125,6 +158,76 @@ fn test_add_column_to_existing_cache() {
 fn test_default_cache() {
     let mut cache: Cache = Default::default();
     cache.add_string_column("name", "Name", "unknown");
-    cache.add_row("fred").unwrap();
-    assert_eq!(cache.row_as_csv(0).unwrap(), "fred");
+    let fred_guid = cache.create_row("fred").unwrap();
+    assert_eq!(cache.csv_for_guid(&fred_guid).unwrap(), "fred");
+}
+
+#[test]
+fn test_update_row() {
+    let mut cache = create_cache();
+
+    let guid = cache
+        .create_row("fred,true, 1, 2019-01-01 00:00:00,chocolate")
+        .unwrap();
+    assert_eq!(
+        cache.csv_for_guid(&guid).unwrap(),
+        "fred,true,1,2019-01-01 00:00:00,chocolate"
+    );
+
+    cache
+        .update_row(&guid, "wilma,false, 2, 2020-01-01 00:00:00,strawberry")
+        .unwrap();
+    assert_eq!(
+        cache.csv_for_guid(&guid).unwrap(),
+        "wilma,false,2,2020-01-01 00:00:00,strawberry"
+    );
+}
+
+#[test]
+fn test_update_row_invalid() {
+    let mut cache = create_cache();
+
+    let guid = cache
+        .create_row("fred,true, 1, 2019-01-01 00:00:00,chocolate")
+        .unwrap();
+    assert_eq!(
+        cache.csv_for_guid(&guid).unwrap(),
+        "fred,true,1,2019-01-01 00:00:00,chocolate"
+    );
+
+    assert!(cache
+        .update_row(
+            &guid,
+            "wilma,false, invalid number, 2020-01-01 00:00:00,strawberry"
+        )
+        .is_err());
+    assert_eq!(
+        cache.csv_for_guid(&guid).unwrap(),
+        "fred,true,1,2019-01-01 00:00:00,chocolate"
+    );
+}
+
+#[test]
+fn test_missing_guid() {
+    let mut cache = create_cache();
+
+    let guid = cache
+        .create_row("fred,true, 1, 2019-01-01 00:00:00,chocolate")
+        .unwrap();
+    assert_eq!(
+        cache.csv_for_guid(&guid).unwrap(),
+        "fred,true,1,2019-01-01 00:00:00,chocolate"
+    );
+
+    let other_guid = Uuid::new_v4();
+    assert!(cache
+        .update_row(
+            &other_guid,
+            "wilma,false, 4, 2020-01-01 00:00:00,strawberry"
+        )
+        .is_err());
+    assert_eq!(
+        cache.csv_for_guid(&guid).unwrap(),
+        "fred,true,1,2019-01-01 00:00:00,chocolate"
+    );
 }

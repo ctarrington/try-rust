@@ -53,7 +53,7 @@ pub fn parse_date_time(
     default_value: &str,
     format: &str,
 ) -> Result<Option<NaiveDateTime>, TypeParseError> {
-    let the_value = get_value(default_value, value);
+    let the_value = get_value(value, default_value);
     match the_value {
         Some(value) => {
             return NaiveDateTime::parse_from_str(value.as_str(), format)
@@ -101,6 +101,21 @@ mod tests {
         assert_eq!(
             parse_date_time("2020-01-01 00:00:00", "", DATE_TIME_FORMAT).unwrap(),
             Some(NaiveDateTime::parse_from_str("2020-01-01 00:00:00", DATE_TIME_FORMAT).unwrap())
+        );
+
+        assert_eq!(
+            parse_date_time(
+                "2020-01-01 00:00:00",
+                "2022-01-01 00:00:00",
+                DATE_TIME_FORMAT
+            )
+            .unwrap(),
+            Some(NaiveDateTime::parse_from_str("2020-01-01 00:00:00", DATE_TIME_FORMAT).unwrap())
+        );
+
+        assert_eq!(
+            parse_date_time("", "2022-01-01 00:00:00", DATE_TIME_FORMAT).unwrap(),
+            Some(NaiveDateTime::parse_from_str("2022-01-01 00:00:00", DATE_TIME_FORMAT).unwrap())
         );
     }
 }

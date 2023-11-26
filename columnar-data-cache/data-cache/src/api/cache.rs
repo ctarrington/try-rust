@@ -88,7 +88,7 @@ impl Cache {
         allowed_values: Vec<String>,
     ) {
         let mut full_allowed_values = allowed_values.clone();
-        if !default_value.is_empty() && !allowed_values.contains(&default_value.to_string()) {
+        if !default_value.is_empty() && !full_allowed_values.contains(&default_value.to_string()) {
             full_allowed_values.push(default_value.to_string());
         }
 

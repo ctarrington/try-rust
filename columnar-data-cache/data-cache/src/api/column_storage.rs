@@ -195,23 +195,23 @@ impl ColumnStorage {
 mod tests {
     use super::*;
 
-    fn create_boolean_storage(default_value: String) -> ColumnStorage {
+    fn create_boolean_storage(default_value: &str) -> ColumnStorage {
         ColumnStorage::BooleanStorage {
-            column: Column::new("verified", "Verified", default_value.as_str()),
+            column: Column::new("verified", "Verified", default_value),
             data: vec![],
         }
     }
 
-    fn create_f64_storage(default_storage: String) -> ColumnStorage {
+    fn create_f64_storage(default_value: &str) -> ColumnStorage {
         ColumnStorage::F64Storage {
-            column: Column::new("price", "Price", default_storage.as_str()),
+            column: Column::new("price", "Price", default_value),
             data: vec![],
         }
     }
 
-    fn create_string_storage(default_value: String) -> ColumnStorage {
+    fn create_string_storage(default_value: &str) -> ColumnStorage {
         ColumnStorage::StringStorage {
-            column: Column::new("name", "Name", default_value.as_str()),
+            column: Column::new("name", "Name", default_value),
             data: vec![],
         }
     }
@@ -226,10 +226,10 @@ mod tests {
 
     fn create_enumerated_storage(
         allowed_values: Vec<String>,
-        default_value: String,
+        default_value: &str,
     ) -> ColumnStorage {
         ColumnStorage::EnumeratedStorage {
-            column: Column::new("flavor", "Flavor", default_value.as_str()),
+            column: Column::new("flavor", "Flavor", default_value),
             data: vec![],
             allowed_values,
         }
@@ -237,14 +237,14 @@ mod tests {
 
     #[test]
     fn test_string_storage() {
-        let mut storage = create_string_storage("unknown".to_string());
+        let mut storage = create_string_storage("unknown");
 
         assert_eq!(storage.add_value("hello"), Ok(None));
         assert_eq!(storage.get_as_string(0), Ok("hello".to_string()));
         assert_eq!(storage.add_value(""), Ok(None));
         assert_eq!(storage.get_as_string(1), Ok("unknown".to_string()));
 
-        let mut storage = create_string_storage("".to_string());
+        let mut storage = create_string_storage("");
         assert_eq!(storage.add_value("hello"), Ok(None));
         assert_eq!(storage.get_as_string(0), Ok("hello".to_string()));
         assert_eq!(storage.add_value(""), Ok(None));
@@ -253,7 +253,7 @@ mod tests {
 
     #[test]
     fn test_boolean_storage() {
-        let mut storage = create_boolean_storage("false".to_string());
+        let mut storage = create_boolean_storage("false");
 
         assert_eq!(storage.add_value("true"), Ok(None));
         assert_eq!(storage.get_as_string(0), Ok("true".to_string()));
@@ -267,7 +267,7 @@ mod tests {
         assert_eq!(storage.add_value(""), Ok(None));
         assert_eq!(storage.get_as_string(3), Ok("false".to_string()));
 
-        let mut storage = create_boolean_storage("".to_string());
+        let mut storage = create_boolean_storage("");
         assert_eq!(storage.add_value(""), Ok(None));
         assert_eq!(storage.get_as_string(0), Ok("".to_string()));
 
@@ -277,7 +277,7 @@ mod tests {
 
     #[test]
     fn test_f64_storage() {
-        let mut storage = create_f64_storage("0".to_string());
+        let mut storage = create_f64_storage("0");
 
         assert_eq!(storage.add_value("1.0"), Ok(None));
         assert_eq!(storage.get_as_string(0), Ok("1".to_string()));
@@ -288,7 +288,7 @@ mod tests {
         assert_eq!(storage.add_value("1.3"), Ok(None));
         assert_eq!(storage.get_as_string(3), Ok("1.3".to_string()));
 
-        let mut storage = create_f64_storage("0".to_string());
+        let mut storage = create_f64_storage("0");
         assert_eq!(storage.add_value(""), Ok(None));
         assert_eq!(storage.get_as_string(0), Ok("0".to_string()));
     }
@@ -315,7 +315,7 @@ mod tests {
                 "blue".to_string(),
                 "purple".to_string(),
             ],
-            "purple".to_string(),
+            "purple",
         );
 
         assert_eq!(storage.add_value("red"), Ok(None));
@@ -332,7 +332,7 @@ mod tests {
 
     #[test]
     fn test_remove_last_value() {
-        let mut storage = create_string_storage("unknown".to_string());
+        let mut storage = create_string_storage("unknown");
         storage.add_value("hello").unwrap();
         storage.remove_last_value();
         storage.remove_last_value();

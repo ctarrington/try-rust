@@ -10,6 +10,8 @@
 * return the guid in the add row method X 
 * allow replacement of row by guid X
 
+* prevent duplicate names for columns
+
 * allow updates of cell value by guid  ??
 
 * add a snapshot - specify filters, select columns snap at time

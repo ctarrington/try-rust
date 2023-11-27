@@ -15,11 +15,11 @@
 
 * Improve error handling
     * different error types for different errors
-        * parse error
-        * invalid guid
+        * parse error X
+        * invalid guid X
+        * implement fmt::Display for error type and From for error types X
         * duplicate column name 
-    * but wrap them in a cache error type
-    * implement fmt::Display for error type
+        * store source in From and expose in Error and Display
 
 
 * prevent duplicate names for columns

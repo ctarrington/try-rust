@@ -31,10 +31,7 @@ pub fn parse_bool(value: &str, default_value: &str) -> Result<Option<bool>, Cach
 
 pub fn parse_f64(value: &str, defualt_value: &str) -> Result<Option<f64>, CacheError> {
     match get_value(value, defualt_value) {
-        Some(the_value) => the_value
-            .parse::<f64>()
-            .map(Some)
-            .map_err(|_| CacheError::ParseError {}),
+        Some(the_value) => Ok(Some(the_value.parse::<f64>()?)),
         _ => Ok(None),
     }
 }
@@ -51,13 +48,9 @@ pub fn parse_date_time(
     default_value: &str,
     format: &str,
 ) -> Result<Option<NaiveDateTime>, CacheError> {
-    let the_value = get_value(value, default_value);
-    match the_value {
-        Some(value) => {
-            return NaiveDateTime::parse_from_str(value.as_str(), format)
-                .map(Some)
-                .map_err(|_| CacheError::ParseError {});
-        }
+    let wrapped_value = get_value(value, default_value);
+    match wrapped_value {
+        Some(value) => Ok(Some(NaiveDateTime::parse_from_str(value.as_str(), format)?)),
         _ => Ok(None),
     }
 }

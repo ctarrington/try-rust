@@ -1,4 +1,5 @@
 use std::fmt::{Display, Formatter};
+use std::num::ParseFloatError;
 use std::{error, fmt};
 
 #[derive(Debug, PartialEq)]
@@ -25,5 +26,19 @@ impl error::Error for CacheError {
             CacheError::ParseError => None,
             CacheError::IllegalState {} => None,
         }
+    }
+}
+
+// implementing the From trait allows us to use the ? operator
+impl From<ParseFloatError> for CacheError {
+    fn from(_: ParseFloatError) -> Self {
+        CacheError::ParseError
+    }
+}
+
+// implementing the From trait allows us to use the ? operator
+impl From<chrono::ParseError> for CacheError {
+    fn from(_: chrono::ParseError) -> Self {
+        CacheError::ParseError
     }
 }

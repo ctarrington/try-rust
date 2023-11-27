@@ -1,7 +1,8 @@
+use crate::api::cache_error::CacheError;
 use chrono::NaiveDateTime;
 
 /// The parsers module contains type specific functions that parse a string value into a specific type.
-/// Each function returns a Result<Option<T>, TypeParseError> where T is the desired output type.
+/// Each function returns a Result<Option<T>, CacheError::ParseError> where T is the desired output type.
 
 // This is a helper function that returns the value of a column based on the passed value and the
 // default value for the column definition.
@@ -15,33 +16,30 @@ fn get_value(value: &str, default_value: &str) -> Option<String> {
     }
 }
 
-#[derive(Debug, PartialEq)]
-pub struct TypeParseError {}
-
-pub fn parse_bool(value: &str, default_value: &str) -> Result<Option<bool>, TypeParseError> {
+pub fn parse_bool(value: &str, default_value: &str) -> Result<Option<bool>, CacheError> {
     match get_value(value, default_value) {
         Some(the_value) => match the_value.as_str().to_ascii_lowercase().trim() {
             "true" => Ok(Some(true)),
             "false" => Ok(Some(false)),
             "0" => Ok(Some(false)),
             "1" => Ok(Some(true)),
-            _ => Err(TypeParseError {}),
+            _ => Err(CacheError::ParseError {}),
         },
         _ => Ok(None),
     }
 }
 
-pub fn parse_f64(value: &str, defualt_value: &str) -> Result<Option<f64>, TypeParseError> {
+pub fn parse_f64(value: &str, defualt_value: &str) -> Result<Option<f64>, CacheError> {
     match get_value(value, defualt_value) {
         Some(the_value) => the_value
             .parse::<f64>()
             .map(Some)
-            .map_err(|_| TypeParseError {}),
+            .map_err(|_| CacheError::ParseError {}),
         _ => Ok(None),
     }
 }
 
-pub fn parse_string(value: &str, default_value: &str) -> Result<Option<String>, TypeParseError> {
+pub fn parse_string(value: &str, default_value: &str) -> Result<Option<String>, CacheError> {
     match get_value(value, default_value) {
         Some(the_value) => Ok(Some(the_value)),
         _ => Ok(None),
@@ -52,13 +50,13 @@ pub fn parse_date_time(
     value: &str,
     default_value: &str,
     format: &str,
-) -> Result<Option<NaiveDateTime>, TypeParseError> {
+) -> Result<Option<NaiveDateTime>, CacheError> {
     let the_value = get_value(value, default_value);
     match the_value {
         Some(value) => {
             return NaiveDateTime::parse_from_str(value.as_str(), format)
                 .map(Some)
-                .map_err(|_| TypeParseError {});
+                .map_err(|_| CacheError::ParseError {});
         }
         _ => Ok(None),
     }

@@ -16,7 +16,7 @@
 * Improve error handling
     * different error types for different errors
         * parse error
-        * invalid index
+        * invalid guid
         * duplicate column name 
     * but wrap them in a cache error type
     * implement fmt::Display for error type

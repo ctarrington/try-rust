@@ -1,10 +1,9 @@
+use crate::api::cache_error::CacheError;
 use crate::api::column::Column;
 use crate::api::column_storage::ColumnStorage;
-use crate::api::parsers::TypeParseError;
+
 use uuid::Uuid;
 
-#[derive(Debug, PartialEq)]
-pub struct CacheAccessError {}
 pub struct Cache {
     column_stores: Vec<ColumnStorage>,
     guids: Vec<Uuid>,
@@ -102,11 +101,10 @@ impl Cache {
         self.column_stores.push(new_column_store);
     }
 
-    pub fn update_row(&mut self, guid: &Uuid, row: &str) -> Result<Uuid, TypeParseError> {
+    pub fn update_row(&mut self, guid: &Uuid, row: &str) -> Result<Uuid, CacheError> {
         let index = self.find_index(guid);
         if index.is_none() {
-            // todo: wrong error???
-            return Err(TypeParseError {});
+            return Err(CacheError::GuidNotFound {});
         }
 
         self.add_row(guid, row)?; // returns error if row is invalid
@@ -114,15 +112,15 @@ impl Cache {
 
         Ok(*guid)
     }
-    pub fn create_row(&mut self, row: &str) -> Result<Uuid, TypeParseError> {
+    pub fn create_row(&mut self, row: &str) -> Result<Uuid, CacheError> {
         let guid = Uuid::new_v4();
         self.add_row(&guid, row)
     }
 
-    pub fn csv_for_guid(&self, guid: &Uuid) -> Result<String, CacheAccessError> {
+    pub fn csv_for_guid(&self, guid: &Uuid) -> Result<String, CacheError> {
         let index = self.find_index(guid);
         if index.is_none() {
-            return Err(CacheAccessError {});
+            return Err(CacheError::GuidNotFound {});
         }
 
         self.csv_for_index(index.unwrap())
@@ -139,13 +137,13 @@ impl Cache {
         self.guids.iter().position(|g| g == guid)
     }
 
-    fn remove_row_by_index(&mut self, index: usize) -> Result<(), CacheAccessError> {
+    fn remove_row_by_index(&mut self, index: usize) -> Result<(), CacheError> {
         if self.column_stores.is_empty() {
-            return Err(CacheAccessError {});
+            return Err(CacheError::IllegalState {});
         }
 
         if self.row_count() <= index {
-            return Err(CacheAccessError {});
+            return Err(CacheError::IllegalState {});
         }
 
         for column_store in self.column_stores.iter_mut() {
@@ -156,12 +154,12 @@ impl Cache {
         Ok(())
     }
 
-    fn add_row(&mut self, guid: &Uuid, row: &str) -> Result<Uuid, TypeParseError> {
-        let mut error: Option<TypeParseError> = None;
+    fn add_row(&mut self, guid: &Uuid, row: &str) -> Result<Uuid, CacheError> {
+        let mut error: Option<CacheError> = None;
         let values: Vec<&str> = row.split(',').collect();
 
         if values.len() != self.column_stores.len() {
-            return Err(TypeParseError {});
+            return Err(CacheError::ParseError {});
         }
 
         for (index, value) in values.iter().enumerate() {
@@ -183,13 +181,13 @@ impl Cache {
         }
     }
 
-    fn csv_for_index(&self, index: usize) -> Result<String, CacheAccessError> {
+    fn csv_for_index(&self, index: usize) -> Result<String, CacheError> {
         if self.column_stores.is_empty() {
-            return Err(CacheAccessError {});
+            return Err(CacheError::IllegalState {});
         }
 
         if self.row_count() <= index {
-            return Err(CacheAccessError {});
+            return Err(CacheError::GuidNotFound {});
         }
 
         let mut row: String = self

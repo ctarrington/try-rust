@@ -1,5 +1,6 @@
+use crate::api::cache_error::CacheError;
 use crate::api::column::Column;
-use crate::api::parsers::{parse_bool, parse_date_time, parse_f64, parse_string, TypeParseError};
+use crate::api::parsers::{parse_bool, parse_date_time, parse_f64, parse_string};
 #[derive(Debug, PartialEq)]
 pub struct IndexRangeError {}
 
@@ -30,8 +31,8 @@ pub enum ColumnStorage {
 
 fn push_with_check<T>(
     data: &mut Vec<Option<T>>,
-    parsed_value: Result<Option<T>, TypeParseError>,
-) -> Result<Option<()>, TypeParseError> {
+    parsed_value: Result<Option<T>, CacheError>,
+) -> Result<Option<()>, CacheError> {
     match parsed_value {
         Ok(value) => {
             data.push(value);
@@ -39,7 +40,7 @@ fn push_with_check<T>(
         }
         Err(_) => {
             data.push(None);
-            Err(TypeParseError {})
+            Err(CacheError::ParseError {})
         }
     }
 }
@@ -61,7 +62,7 @@ where
 }
 
 impl ColumnStorage {
-    pub fn add_value(&mut self, value: &str) -> Result<Option<()>, TypeParseError> {
+    pub fn add_value(&mut self, value: &str) -> Result<Option<()>, CacheError> {
         match self {
             ColumnStorage::BooleanStorage { data, column } => {
                 let parsed_value = parse_bool(value, column.default_value.as_str());
@@ -99,7 +100,7 @@ impl ColumnStorage {
                             Ok(None)
                         } else {
                             data.push(None);
-                            Err(TypeParseError {})
+                            Err(CacheError::ParseError {})
                         }
                     }
                     Ok(None) => {
@@ -108,7 +109,7 @@ impl ColumnStorage {
                     }
                     _ => {
                         data.push(None);
-                        Err(TypeParseError {})
+                        Err(CacheError::ParseError {})
                     }
                 }
             }
@@ -261,7 +262,7 @@ mod tests {
         assert_eq!(storage.add_value("tRue"), Ok(None));
         assert_eq!(storage.get_as_string(1), Ok("true".to_string()));
 
-        assert_eq!(storage.add_value("xyz"), Err(TypeParseError {}));
+        assert_eq!(storage.add_value("xyz"), Err(CacheError::ParseError {}));
         assert_eq!(storage.get_as_string(2), Ok("".to_string()));
 
         assert_eq!(storage.add_value(""), Ok(None));
@@ -283,7 +284,7 @@ mod tests {
         assert_eq!(storage.get_as_string(0), Ok("1".to_string()));
         assert_eq!(storage.add_value(""), Ok(None));
         assert_eq!(storage.get_as_string(1), Ok("0".to_string()));
-        assert_eq!(storage.add_value("xyz"), Err(TypeParseError {}));
+        assert_eq!(storage.add_value("xyz"), Err(CacheError::ParseError {}));
         assert_eq!(storage.get_as_string(2), Ok("".to_string()));
         assert_eq!(storage.add_value("1.3"), Ok(None));
         assert_eq!(storage.get_as_string(3), Ok("1.3".to_string()));
@@ -321,7 +322,7 @@ mod tests {
         assert_eq!(storage.add_value("red"), Ok(None));
         assert_eq!(storage.add_value("green"), Ok(None));
         assert_eq!(storage.add_value("blue"), Ok(None));
-        assert_eq!(storage.add_value("xyz"), Err(TypeParseError {}));
+        assert_eq!(storage.add_value("xyz"), Err(CacheError::ParseError {}));
         assert_eq!(storage.add_value(""), Ok(None));
         assert_eq!(storage.get_as_string(0), Ok("red".to_string()));
         assert_eq!(storage.get_as_string(1), Ok("green".to_string()));

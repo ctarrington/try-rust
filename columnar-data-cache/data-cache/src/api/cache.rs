@@ -159,7 +159,7 @@ impl Cache {
         let values: Vec<&str> = row.split(',').collect();
 
         if values.len() != self.column_stores.len() {
-            return Err(CacheError::ParseError {});
+            return Err(CacheError::IllegalState {});
         }
 
         for (index, value) in values.iter().enumerate() {

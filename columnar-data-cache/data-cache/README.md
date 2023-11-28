@@ -18,8 +18,8 @@
         * parse error X
         * invalid guid X
         * implement fmt::Display for error type and From for error types X
+        * store source in From and expose in Error and Display X
         * duplicate column name 
-        * store source in From and expose in Error and Display
 
 
 * prevent duplicate names for columns

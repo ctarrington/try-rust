@@ -38,9 +38,9 @@ fn push_with_check<T>(
             data.push(value);
             Ok(None)
         }
-        Err(_) => {
+        Err(error) => {
             data.push(None);
-            Err(CacheError::ParseError {})
+            Err(error)
         }
     }
 }
@@ -100,16 +100,16 @@ impl ColumnStorage {
                             Ok(None)
                         } else {
                             data.push(None);
-                            Err(CacheError::ParseError {})
+                            Err(CacheError::IllegalState {})
                         }
                     }
                     Ok(None) => {
                         data.push(None);
                         Ok(None)
                     }
-                    _ => {
+                    Err(error) => {
                         data.push(None);
-                        Err(CacheError::ParseError {})
+                        Err(error)
                     }
                 }
             }
@@ -262,7 +262,7 @@ mod tests {
         assert_eq!(storage.add_value("tRue"), Ok(None));
         assert_eq!(storage.get_as_string(1), Ok("true".to_string()));
 
-        assert_eq!(storage.add_value("xyz"), Err(CacheError::ParseError {}));
+        assert!(storage.add_value("xyz").is_err());
         assert_eq!(storage.get_as_string(2), Ok("".to_string()));
 
         assert_eq!(storage.add_value(""), Ok(None));
@@ -284,7 +284,7 @@ mod tests {
         assert_eq!(storage.get_as_string(0), Ok("1".to_string()));
         assert_eq!(storage.add_value(""), Ok(None));
         assert_eq!(storage.get_as_string(1), Ok("0".to_string()));
-        assert_eq!(storage.add_value("xyz"), Err(CacheError::ParseError {}));
+        assert!(storage.add_value("xyz").is_err());
         assert_eq!(storage.get_as_string(2), Ok("".to_string()));
         assert_eq!(storage.add_value("1.3"), Ok(None));
         assert_eq!(storage.get_as_string(3), Ok("1.3".to_string()));
@@ -322,7 +322,7 @@ mod tests {
         assert_eq!(storage.add_value("red"), Ok(None));
         assert_eq!(storage.add_value("green"), Ok(None));
         assert_eq!(storage.add_value("blue"), Ok(None));
-        assert_eq!(storage.add_value("xyz"), Err(CacheError::ParseError {}));
+        assert_eq!(storage.add_value("xyz"), Err(CacheError::IllegalState {}));
         assert_eq!(storage.add_value(""), Ok(None));
         assert_eq!(storage.get_as_string(0), Ok("red".to_string()));
         assert_eq!(storage.get_as_string(1), Ok("green".to_string()));

@@ -19,11 +19,11 @@ fn get_value(value: &str, default_value: &str) -> Option<String> {
 pub fn parse_bool(value: &str, default_value: &str) -> Result<Option<bool>, CacheError> {
     match get_value(value, default_value) {
         Some(the_value) => match the_value.as_str().to_ascii_lowercase().trim() {
-            "true" => Ok(Some(true)),
-            "false" => Ok(Some(false)),
             "0" => Ok(Some(false)),
             "1" => Ok(Some(true)),
-            _ => Err(CacheError::ParseError {}),
+            "true" => Ok(Some(true)),
+            "false" => Ok(Some(false)),
+            _ => Ok(Some(the_value.parse::<bool>()?)),
         },
         _ => Ok(None),
     }
@@ -71,7 +71,13 @@ mod tests {
         assert_eq!(parse_bool("", "true").unwrap(), Some(true));
         assert_eq!(parse_bool("", "false").unwrap(), Some(false));
 
-        assert!(parse_bool("invalid", "true").is_err());
+        let invalid_result = parse_bool("invalid", "true");
+        assert!(invalid_result.is_err());
+        assert_eq!(
+            invalid_result.unwrap_err().to_string(),
+            "ParseError: provided string was not `true` or `false`"
+        );
+
         assert!(parse_bool("", "invalid").is_err());
     }
 

@@ -7,28 +7,24 @@ use uuid::Uuid;
 
 #[derive(Debug)]
 pub enum CacheError {
-    GuidNotFound { guid: Uuid },
+    GuidNotFound(Uuid),
     ParseError(Box<dyn Error>),
-    IllegalState {},
-    DuplicateColumn { name: String },
+    IllegalState,
+    DuplicateColumn(String),
 }
 
 impl PartialEq for CacheError {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (
-                CacheError::GuidNotFound { guid: left_guid },
-                CacheError::GuidNotFound { guid: right_guid },
-            ) => left_guid == right_guid,
-            (CacheError::IllegalState {}, CacheError::IllegalState {}) => true,
-            (
-                CacheError::DuplicateColumn { name: left_name },
-                CacheError::DuplicateColumn { name: right_name },
-            ) => left_name == right_name,
+            (CacheError::GuidNotFound(left_guid), CacheError::GuidNotFound(right_guid)) => {
+                left_guid == right_guid
+            }
+            (CacheError::IllegalState, CacheError::IllegalState) => true,
+            (CacheError::DuplicateColumn(left_name), CacheError::DuplicateColumn(right_name)) => {
+                left_name == right_name
+            }
             (CacheError::ParseError(left_error), CacheError::ParseError(right_error)) => {
-                let left_error = left_error.to_string();
-                let right_error = right_error.to_string();
-                left_error == right_error
+                left_error.to_string() == right_error.to_string()
             }
             _ => false,
         }
@@ -38,8 +34,8 @@ impl PartialEq for CacheError {
 impl Display for CacheError {
     fn fmt(&self, formatter: &mut Formatter) -> fmt::Result {
         match self {
-            CacheError::GuidNotFound { guid } => write!(formatter, "Guid not found: {}", guid),
-            CacheError::DuplicateColumn { name } => {
+            CacheError::GuidNotFound(guid) => write!(formatter, "Guid not found: {}", guid),
+            CacheError::DuplicateColumn(name) => {
                 write!(formatter, "Duplicate column: {}", name)
             }
             CacheError::ParseError(error) => {
@@ -53,8 +49,8 @@ impl Display for CacheError {
 impl error::Error for CacheError {
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         match self {
-            CacheError::GuidNotFound { .. } => None,
-            CacheError::DuplicateColumn { .. } => None,
+            CacheError::GuidNotFound(..) => None,
+            CacheError::DuplicateColumn(..) => None,
             CacheError::ParseError(error) => Some(error.as_ref()),
             CacheError::IllegalState {} => None,
         }

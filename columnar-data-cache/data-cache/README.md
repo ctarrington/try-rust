@@ -22,9 +22,7 @@
         * duplicate column name X 
         * index error in column storage should be part of cache error X
         * store guid in Error and expose in Error and Display X
-
-
-* prevent duplicate names for columns
+        * prevent duplicate names for columns X
 
 * allow updates of cell value by guid  ??
 

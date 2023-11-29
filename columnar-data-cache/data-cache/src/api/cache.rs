@@ -36,9 +36,7 @@ impl Cache {
             .iter()
             .any(|column_store| column_store.get_column_name() == name)
         {
-            return Err(CacheError::DuplicateColumn {
-                name: name.to_string(),
-            });
+            return Err(CacheError::DuplicateColumn(name.to_string()));
         }
 
         Ok(())
@@ -147,7 +145,7 @@ impl Cache {
     pub fn update_row(&mut self, guid: &Uuid, row: &str) -> Result<Uuid, CacheError> {
         let index = self.find_index(guid);
         if index.is_none() {
-            return Err(CacheError::GuidNotFound { guid: *guid });
+            return Err(CacheError::GuidNotFound(*guid));
         }
 
         self.add_row(guid, row)?; // returns error if row is invalid
@@ -163,7 +161,7 @@ impl Cache {
     pub fn csv_for_guid(&self, guid: &Uuid) -> Result<String, CacheError> {
         let index = self.find_index(guid);
         if index.is_none() {
-            return Err(CacheError::GuidNotFound { guid: *guid });
+            return Err(CacheError::GuidNotFound(*guid));
         }
 
         self.csv_for_index(index.unwrap())

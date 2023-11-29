@@ -243,7 +243,7 @@ fn test_missing_guid() {
             &other_guid,
             "wilma,false, 4, 2020-01-01 00:00:00,strawberry"
         ),
-        Err(CacheError::GuidNotFound { guid: other_guid })
+        Err(CacheError::GuidNotFound(other_guid))
     );
     assert_eq!(
         cache.csv_for_guid(&guid).unwrap(),
@@ -257,36 +257,63 @@ fn test_duplicate_column() {
 
     assert_eq!(
         cache.add_string_column("name", "Name", "unknown"),
-        Err(CacheError::DuplicateColumn {
-            name: "name".to_string()
-        })
+        Err(CacheError::DuplicateColumn("name".to_string()))
     );
 
     assert_eq!(
         cache.add_boolean_column("verified", "Verified", "false"),
-        Err(CacheError::DuplicateColumn {
-            name: "verified".to_string()
-        })
+        Err(CacheError::DuplicateColumn("verified".to_string()))
     );
 
     assert_eq!(
         cache.add_f64_column("age", "Age", "0"),
-        Err(CacheError::DuplicateColumn {
-            name: "age".to_string()
-        })
+        Err(CacheError::DuplicateColumn("age".to_string()))
     );
 
     assert_eq!(
         cache.add_time_date_column("start_time", "Start Time", "%Y-%m-%d %H:%M:%S", ""),
-        Err(CacheError::DuplicateColumn {
-            name: "start_time".to_string()
-        })
+        Err(CacheError::DuplicateColumn("start_time".to_string()))
     );
 
     assert_eq!(
         cache.add_enumerated_column("flavor", "Flavor", "vanilla", create_flavors()),
-        Err(CacheError::DuplicateColumn {
-            name: "flavor".to_string()
-        })
+        Err(CacheError::DuplicateColumn("flavor".to_string()))
     );
+}
+
+#[test]
+fn test_duplicate_column_format() {
+    let mut cache = create_cache();
+    let result = cache.add_time_date_column("start_time", "Start Time", "%Y-%m-%d %H:%M:%S", "");
+    assert!(result.is_err());
+    if let Err(error) = result {
+        assert_eq!(error.to_string(), "Duplicate column: start_time");
+    }
+}
+
+#[test]
+fn test_missing_guid_format() {
+    let mut cache = create_cache();
+    let other_guid = Uuid::new_v4();
+    let result = cache.update_row(
+        &other_guid,
+        "wilma,false, 4, 2020-01-01 00:00:00,strawberry",
+    );
+    assert!(result.is_err());
+    if let Err(error) = result {
+        assert_eq!(error.to_string(), format!("Guid not found: {}", other_guid));
+    }
+}
+
+#[test]
+fn test_invalid_row_format() {
+    let mut cache = create_cache();
+    let result = cache.create_row("wilma,invalid boolean, 5, 2020-01-01 00:00:00,strawberry");
+    assert!(result.is_err());
+    if let Err(error) = result {
+        assert_eq!(
+            error.to_string(),
+            "ParseError: provided string was not `true` or `false`"
+        );
+    }
 }

@@ -3,19 +3,28 @@ use std::fmt::{Display, Formatter};
 use std::num::ParseFloatError;
 use std::str::ParseBoolError;
 use std::{error, fmt};
+use uuid::Uuid;
 
 #[derive(Debug)]
 pub enum CacheError {
-    GuidNotFound,
+    GuidNotFound { guid: Uuid },
     ParseError(Box<dyn Error>),
     IllegalState {},
+    DuplicateColumn { name: String },
 }
 
 impl PartialEq for CacheError {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (CacheError::GuidNotFound, CacheError::GuidNotFound) => true,
+            (
+                CacheError::GuidNotFound { guid: left_guid },
+                CacheError::GuidNotFound { guid: right_guid },
+            ) => left_guid == right_guid,
             (CacheError::IllegalState {}, CacheError::IllegalState {}) => true,
+            (
+                CacheError::DuplicateColumn { name: left_name },
+                CacheError::DuplicateColumn { name: right_name },
+            ) => left_name == right_name,
             (CacheError::ParseError(left_error), CacheError::ParseError(right_error)) => {
                 let left_error = left_error.to_string();
                 let right_error = right_error.to_string();
@@ -29,7 +38,10 @@ impl PartialEq for CacheError {
 impl Display for CacheError {
     fn fmt(&self, formatter: &mut Formatter) -> fmt::Result {
         match self {
-            CacheError::GuidNotFound => write!(formatter, "Guid not found"),
+            CacheError::GuidNotFound { guid } => write!(formatter, "Guid not found: {}", guid),
+            CacheError::DuplicateColumn { name } => {
+                write!(formatter, "Duplicate column: {}", name)
+            }
             CacheError::ParseError(error) => {
                 write!(formatter, "ParseError: {}", error.to_string().as_str())
             }
@@ -41,7 +53,8 @@ impl Display for CacheError {
 impl error::Error for CacheError {
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         match self {
-            CacheError::GuidNotFound => None,
+            CacheError::GuidNotFound { .. } => None,
+            CacheError::DuplicateColumn { .. } => None,
             CacheError::ParseError(error) => Some(error.as_ref()),
             CacheError::IllegalState {} => None,
         }

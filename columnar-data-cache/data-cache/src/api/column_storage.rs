@@ -2,7 +2,6 @@ use crate::api::cache_error::CacheError;
 use crate::api::column::Column;
 use crate::api::parsers::{parse_bool, parse_date_time, parse_f64, parse_string};
 #[derive(Debug, PartialEq)]
-pub struct IndexRangeError {}
 
 pub enum ColumnStorage {
     StringStorage {
@@ -45,12 +44,12 @@ fn push_with_check<T>(
     }
 }
 
-fn value_to_string<T>(data: &[Option<T>], index: usize) -> Result<String, IndexRangeError>
+fn value_to_string<T>(data: &[Option<T>], index: usize) -> Result<String, CacheError>
 where
     T: ToString,
 {
     if index >= data.len() {
-        return Err(IndexRangeError {});
+        return Err(CacheError::IllegalState {});
     }
 
     let wrapper = data.get(index);
@@ -126,7 +125,7 @@ impl ColumnStorage {
         }
     }
 
-    pub fn remove_value(&mut self, index: usize) -> Result<(), IndexRangeError> {
+    pub fn remove_value(&mut self, index: usize) -> Result<(), CacheError> {
         match self {
             ColumnStorage::BooleanStorage { data, .. } => {
                 data.remove(index);
@@ -171,7 +170,7 @@ impl ColumnStorage {
         }
     }
 
-    pub fn get_as_string(&self, index: usize) -> Result<String, IndexRangeError> {
+    pub fn get_as_string(&self, index: usize) -> Result<String, CacheError> {
         match self {
             ColumnStorage::BooleanStorage { data, .. } => value_to_string(data, index),
             ColumnStorage::F64Storage { data, .. } => value_to_string(data, index),
@@ -188,6 +187,16 @@ impl ColumnStorage {
             ColumnStorage::StringStorage { column, .. } => column.default_value.clone(),
             ColumnStorage::TimeDateStorage { column, .. } => column.default_value.clone(),
             ColumnStorage::EnumeratedStorage { column, .. } => column.default_value.clone(),
+        }
+    }
+
+    pub fn get_column_name(&self) -> String {
+        match self {
+            ColumnStorage::BooleanStorage { column, .. } => column.name.clone(),
+            ColumnStorage::F64Storage { column, .. } => column.name.clone(),
+            ColumnStorage::StringStorage { column, .. } => column.name.clone(),
+            ColumnStorage::TimeDateStorage { column, .. } => column.name.clone(),
+            ColumnStorage::EnumeratedStorage { column, .. } => column.name.clone(),
         }
     }
 }

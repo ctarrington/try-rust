@@ -19,7 +19,9 @@
         * invalid guid X
         * implement fmt::Display for error type and From for error types X
         * store source in From and expose in Error and Display X
-        * duplicate column name 
+        * duplicate column name X 
+        * index error in column storage should be part of cache error X
+        * store guid in Error and expose in Error and Display X
 
 
 * prevent duplicate names for columns

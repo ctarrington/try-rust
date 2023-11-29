@@ -1,3 +1,4 @@
+#[derive(Debug, PartialEq)]
 pub struct Column {
     pub name: String,
     pub display_name: String,

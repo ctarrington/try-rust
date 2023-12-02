@@ -9,25 +9,20 @@ fn create_flavors() -> Vec<String> {
     ]
 }
 
-fn create_cache() -> Cache {
+fn create_cache() -> Result<Cache, CacheError> {
     let mut cache = Cache::new();
-    cache.add_string_column("name", "Name", "unknown").unwrap();
-    cache
-        .add_boolean_column("verified", "Verified", "false")
-        .unwrap();
-    cache.add_f64_column("age", "Age", "0").unwrap();
-    cache
-        .add_time_date_column("start_time", "Start Time", "%Y-%m-%d %H:%M:%S", "")
-        .unwrap();
-    cache
-        .add_enumerated_column("flavor", "Flavor", "vanilla", create_flavors())
-        .unwrap();
-    cache
+    cache.add_string_column("name", "Name", "unknown")?;
+    cache.add_boolean_column("verified", "Verified", "false")?;
+    cache.add_f64_column("age", "Age", "0")?;
+    cache.add_time_date_column("start_time", "Start Time", "%Y-%m-%d %H:%M:%S", "")?;
+    cache.add_enumerated_column("flavor", "Flavor", "vanilla", create_flavors())?;
+
+    Ok(cache)
 }
 
 #[test]
 fn test_simple() {
-    let mut cache = create_cache();
+    let mut cache = create_cache().unwrap();
 
     let fred_guid = cache
         .create_row("fred,true, 1, 2019-01-01 00:00:00,chocolate")
@@ -47,7 +42,7 @@ fn test_simple() {
 
 #[test]
 fn test_invalid_rows() {
-    let mut cache = create_cache();
+    let mut cache = create_cache().unwrap();
 
     assert!(cache
         .create_row("wilma,false, 2020-01-01 00:00:00,1")
@@ -60,7 +55,7 @@ fn test_invalid_rows() {
 
 #[test]
 fn test_empty() {
-    let mut cache = create_cache();
+    let mut cache = create_cache().unwrap();
 
     let guid = cache.create_row(",,,,").unwrap();
     assert_eq!(
@@ -71,7 +66,7 @@ fn test_empty() {
 
 #[test]
 fn test_valid_after_invalid() {
-    let mut cache = create_cache();
+    let mut cache = create_cache().unwrap();
 
     assert!(cache.create_row("wilma,false,1").is_err());
     let fred_guid = cache
@@ -182,7 +177,7 @@ fn test_default_cache() {
 
 #[test]
 fn test_update_row() {
-    let mut cache = create_cache();
+    let mut cache = create_cache().unwrap();
 
     let guid = cache
         .create_row("fred,true, 1, 2019-01-01 00:00:00,chocolate")
@@ -203,7 +198,7 @@ fn test_update_row() {
 
 #[test]
 fn test_update_row_invalid() {
-    let mut cache = create_cache();
+    let mut cache = create_cache().unwrap();
 
     let guid = cache
         .create_row("fred,true, 1, 2019-01-01 00:00:00,chocolate")
@@ -227,7 +222,7 @@ fn test_update_row_invalid() {
 
 #[test]
 fn test_missing_guid() {
-    let mut cache = create_cache();
+    let mut cache = create_cache().unwrap();
 
     let guid = cache
         .create_row("fred,true, 1, 2019-01-01 00:00:00,chocolate")
@@ -253,7 +248,7 @@ fn test_missing_guid() {
 
 #[test]
 fn test_duplicate_column() {
-    let mut cache = create_cache();
+    let mut cache = create_cache().unwrap();
 
     assert_eq!(
         cache.add_string_column("name", "Name", "unknown"),
@@ -283,7 +278,7 @@ fn test_duplicate_column() {
 
 #[test]
 fn test_duplicate_column_format() {
-    let mut cache = create_cache();
+    let mut cache = create_cache().unwrap();
     let result = cache.add_time_date_column("start_time", "Start Time", "%Y-%m-%d %H:%M:%S", "");
     assert!(result.is_err());
     if let Err(error) = result {
@@ -293,7 +288,7 @@ fn test_duplicate_column_format() {
 
 #[test]
 fn test_missing_guid_format() {
-    let mut cache = create_cache();
+    let mut cache = create_cache().unwrap();
     let other_guid = Uuid::new_v4();
     let result = cache.update_row(
         &other_guid,
@@ -307,7 +302,7 @@ fn test_missing_guid_format() {
 
 #[test]
 fn test_invalid_row_format() {
-    let mut cache = create_cache();
+    let mut cache = create_cache().unwrap();
     let result = cache.create_row("wilma,invalid boolean, 5, 2020-01-01 00:00:00,strawberry");
     assert!(result.is_err());
     if let Err(error) = result {
@@ -316,4 +311,14 @@ fn test_invalid_row_format() {
             "ParseError: provided string was not `true` or `false`"
         );
     }
+}
+
+#[test]
+fn test_columns() {
+    let cache = create_cache().unwrap();
+
+    let columns = cache.get_columns();
+    assert_eq!(columns[0].name, "name".to_string());
+    assert_eq!(columns[1].display_name, "Verified".to_string());
+    assert_eq!(columns[2].default_value, "0".to_string());
 }

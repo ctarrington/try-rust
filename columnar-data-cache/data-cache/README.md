@@ -24,14 +24,22 @@
         * store guid in Error and expose in Error and Display X
         * prevent duplicate names for columns X
 
-* allow updates of cell value by guid  ??
+* expose information from the column - name, display name, default value X
+* expose information about the cached data - number of rows, number of columns 
+* expoose columns
 
 
-* add a snapshot - specify filters, select columns snap at time
-    * add filtering
+* add a snapshot - select columns snap at time
+    * add a snapshot method to cache
+    * should store time of snapshot
+    * allow user to select columns to snapshot
+    * add filtering criteria to snapshot creation method
     * add the ability to get a vector of values from a snapshot's column?
-    * add sorting
+    * get csv vector by index and length given a sort order
+    * get csv vector by guid and radius given a sort order
 
 
-* use criterion crate for benchmarks
+* use criterion crate for benchmarks  https://crates.io/crates/criterion#features
 
+
+* allow updates of cell value by guid, column name  ??

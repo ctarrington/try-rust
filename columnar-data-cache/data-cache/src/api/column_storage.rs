@@ -190,13 +190,13 @@ impl ColumnStorage {
         }
     }
 
-    pub fn get_column_name(&self) -> String {
+    pub fn get_column(&self) -> &Column {
         match self {
-            ColumnStorage::BooleanStorage { column, .. } => column.name.clone(),
-            ColumnStorage::F64Storage { column, .. } => column.name.clone(),
-            ColumnStorage::StringStorage { column, .. } => column.name.clone(),
-            ColumnStorage::TimeDateStorage { column, .. } => column.name.clone(),
-            ColumnStorage::EnumeratedStorage { column, .. } => column.name.clone(),
+            ColumnStorage::BooleanStorage { column, .. } => column,
+            ColumnStorage::F64Storage { column, .. } => column,
+            ColumnStorage::StringStorage { column, .. } => column,
+            ColumnStorage::TimeDateStorage { column, .. } => column,
+            ColumnStorage::EnumeratedStorage { column, .. } => column,
         }
     }
 }

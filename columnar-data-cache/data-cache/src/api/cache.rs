@@ -34,7 +34,7 @@ impl Cache {
         if self
             .column_stores
             .iter()
-            .any(|column_store| column_store.get_column_name() == name)
+            .any(|column_store| column_store.get_column().name == name)
         {
             return Err(CacheError::DuplicateColumn(name.to_string()));
         }
@@ -143,13 +143,10 @@ impl Cache {
     }
 
     pub fn update_row(&mut self, guid: &Uuid, row: &str) -> Result<Uuid, CacheError> {
-        let index = self.find_index(guid);
-        if index.is_none() {
-            return Err(CacheError::GuidNotFound(*guid));
-        }
+        let index = self.find_index(guid)?;
 
         self.add_row(guid, row)?; // returns error if row is invalid
-        self.remove_row_by_index(index.unwrap()).unwrap();
+        self.remove_row_by_index(index)?;
 
         Ok(*guid)
     }
@@ -159,12 +156,8 @@ impl Cache {
     }
 
     pub fn csv_for_guid(&self, guid: &Uuid) -> Result<String, CacheError> {
-        let index = self.find_index(guid);
-        if index.is_none() {
-            return Err(CacheError::GuidNotFound(*guid));
-        }
-
-        self.csv_for_index(index.unwrap())
+        let index = self.find_index(guid)?;
+        self.csv_for_index(index)
     }
 
     fn fill_in_column_store(&self, column_store: &mut ColumnStorage) {
@@ -174,8 +167,11 @@ impl Cache {
         }
     }
 
-    fn find_index(&self, guid: &Uuid) -> Option<usize> {
-        self.guids.iter().position(|g| g == guid)
+    fn find_index(&self, guid: &Uuid) -> Result<usize, CacheError> {
+        match self.guids.iter().position(|g| g == guid) {
+            Some(index) => Ok(index),
+            None => Err(CacheError::GuidNotFound(*guid)),
+        }
     }
 
     fn remove_row_by_index(&mut self, index: usize) -> Result<(), CacheError> {
@@ -231,13 +227,20 @@ impl Cache {
             return Err(CacheError::IllegalState {});
         }
 
-        let mut row: String = self
+        let row: String = self
             .column_stores
             .iter()
-            .map(|column_store| column_store.get_as_string(index).unwrap() + ",")
-            .collect();
-        row.pop(); // remove the last comma
+            .map(|column_store| column_store.get_as_string(index).unwrap())
+            .collect::<Vec<_>>()
+            .join(",");
         Ok(row)
+    }
+
+    pub fn get_columns(&self) -> Vec<&Column> {
+        self.column_stores
+            .iter()
+            .map(|column_store| column_store.get_column())
+            .collect()
     }
 }
 

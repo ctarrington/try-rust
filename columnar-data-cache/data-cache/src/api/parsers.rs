@@ -58,27 +58,36 @@ pub fn parse_date_time(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::error::Error;
 
     #[test]
     fn test_boolean() {
         assert_eq!(parse_bool("true", "").unwrap(), Some(true));
         assert_eq!(parse_bool("TRUE", "false").unwrap(), Some(true));
+        assert_eq!(parse_bool("1", "").unwrap(), Some(true));
+
         assert_eq!(parse_bool("false", "").unwrap(), Some(false));
         assert_eq!(parse_bool("FALSE", "").unwrap(), Some(false));
         assert_eq!(parse_bool("0", "").unwrap(), Some(false));
-        assert_eq!(parse_bool("1", "").unwrap(), Some(true));
 
         assert_eq!(parse_bool("", "true").unwrap(), Some(true));
         assert_eq!(parse_bool("", "false").unwrap(), Some(false));
+    }
 
-        let invalid_result = parse_bool("invalid", "true");
-        assert!(invalid_result.is_err());
-        assert_eq!(
-            invalid_result.unwrap_err().to_string(),
-            "ParseError: provided string was not `true` or `false`"
-        );
-
-        assert!(parse_bool("", "invalid").is_err());
+    #[test]
+    fn test_boolean_errors() {
+        if let Err(error) = parse_bool("invalid", "true") {
+            assert_eq!(
+                error.to_string(),
+                "ParseError: provided string was not `true` or `false`"
+            );
+            assert_eq!(
+                error.source().unwrap().to_string(),
+                "provided string was not `true` or `false`"
+            );
+        } else {
+            panic!("Expected ParseError");
+        }
     }
 
     #[test]
@@ -89,6 +98,16 @@ mod tests {
         assert_eq!(parse_f64("", " 1").unwrap(), Some(1.0));
         assert!(parse_f64("invalid", "1").is_err());
         assert!(parse_f64("", "invalid").is_err());
+    }
+
+    #[test]
+    fn test_f64_errors() {
+        if let Err(error) = parse_f64("invalid", "") {
+            assert_eq!(error.to_string(), "ParseError: invalid float literal");
+            assert_eq!(error.source().unwrap().to_string(), "invalid float literal");
+        } else {
+            panic!("Expected ParseError");
+        }
     }
 
     #[test]
@@ -114,5 +133,23 @@ mod tests {
             parse_date_time("", "2022-01-01 00:00:00", DATE_TIME_FORMAT).unwrap(),
             Some(NaiveDateTime::parse_from_str("2022-01-01 00:00:00", DATE_TIME_FORMAT).unwrap())
         );
+    }
+
+    #[test]
+    fn test_date_time_errors() {
+        const DATE_TIME_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
+
+        if let Err(error) = parse_date_time("invalid", "", DATE_TIME_FORMAT) {
+            assert_eq!(
+                error.to_string(),
+                "ParseError: input contains invalid characters"
+            );
+            assert_eq!(
+                error.source().unwrap().to_string(),
+                "input contains invalid characters"
+            );
+        } else {
+            panic!("Expected ParseError");
+        }
     }
 }

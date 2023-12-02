@@ -242,6 +242,18 @@ impl Cache {
             .map(|column_store| column_store.get_column())
             .collect()
     }
+
+    pub fn row_len(&self) -> usize {
+        if self.column_stores.is_empty() {
+            return 0;
+        }
+
+        self.column_stores.get(0).unwrap().get_length()
+    }
+
+    pub fn column_len(&self) -> usize {
+        self.column_stores.len()
+    }
 }
 
 // tests are in tests/integration_test_cache.rs since cache is intended for external use

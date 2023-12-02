@@ -25,8 +25,9 @@
         * prevent duplicate names for columns X
 
 * expose information from the column - name, display name, default value X
-* expose information about the cached data - number of rows, number of columns 
-* expoose columns
+* expose information about the cached data - number of rows, number of columns  X
+* expoose column storage details - allowed values, default value, format, type
+        * call it metadata? and have one per column storage type? readonly summary enum?
 
 
 * add a snapshot - select columns snap at time

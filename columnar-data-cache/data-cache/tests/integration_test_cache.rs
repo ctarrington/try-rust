@@ -314,11 +314,27 @@ fn test_invalid_row_format() {
 }
 
 #[test]
-fn test_columns() {
+fn test_common_column_data() {
     let cache = create_cache().unwrap();
 
     let columns = cache.get_columns();
     assert_eq!(columns[0].name, "name".to_string());
     assert_eq!(columns[1].display_name, "Verified".to_string());
     assert_eq!(columns[2].default_value, "0".to_string());
+}
+
+#[test]
+fn test_cache_lengths() {
+    let cache = Cache::default();
+    assert_eq!(cache.row_len(), 0);
+    assert_eq!(cache.column_len(), 0);
+
+    let mut cache = create_cache().unwrap();
+    assert_eq!(cache.row_len(), 0);
+
+    cache
+        .create_row("fred,true, 1, 2019-01-01 00:00:00,chocolate")
+        .unwrap();
+    assert_eq!(cache.row_len(), 1);
+    assert_eq!(cache.column_len(), 5);
 }

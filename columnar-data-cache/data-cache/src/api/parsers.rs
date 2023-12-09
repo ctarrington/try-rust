@@ -4,8 +4,7 @@ use chrono::NaiveDateTime;
 /// The parsers module contains type specific functions that parse a string value into a specific type.
 /// Each function returns a Result<Option<T>, CacheError::ParseError> where T is the desired output type.
 
-// This is a helper function that returns the value of a column based on the passed value and the
-// default value for the column definition.
+// This is a helper function that returns the best value based on the value and the default value.
 fn get_value(value: &str, default_value: &str) -> Option<String> {
     if !value.is_empty() {
         Some(value.trim().to_string())
@@ -16,6 +15,8 @@ fn get_value(value: &str, default_value: &str) -> Option<String> {
     }
 }
 
+/// Parses a string value into a boolean. The following values are supported:
+/// * 0, 1, true, false with case insensitivity
 pub fn parse_bool(value: &str, default_value: &str) -> Result<Option<bool>, CacheError> {
     match get_value(value, default_value) {
         Some(the_value) => match the_value.as_str().to_ascii_lowercase().trim() {
@@ -29,8 +30,9 @@ pub fn parse_bool(value: &str, default_value: &str) -> Result<Option<bool>, Cach
     }
 }
 
-pub fn parse_f64(value: &str, defualt_value: &str) -> Result<Option<f64>, CacheError> {
-    match get_value(value, defualt_value) {
+/// Parses a string value into a f64.
+pub fn parse_f64(value: &str, default_value: &str) -> Result<Option<f64>, CacheError> {
+    match get_value(value, default_value) {
         Some(the_value) => Ok(Some(the_value.parse::<f64>()?)),
         _ => Ok(None),
     }
@@ -72,6 +74,7 @@ mod tests {
 
         assert_eq!(parse_bool("", "true").unwrap(), Some(true));
         assert_eq!(parse_bool("", "false").unwrap(), Some(false));
+        assert_eq!(parse_bool("", "").unwrap(), None);
     }
 
     #[test]

@@ -1,6 +1,7 @@
 pub use crate::api::cache_error::CacheError;
 use crate::api::column::Column;
-use crate::api::column_storage::ColumnStorage;
+use crate::api::column_metadata::ColumnMetadata;
+use crate::api::column_storage::{ColumnStorage, ColumnStorageDataType};
 use uuid::Uuid;
 
 pub struct Cache {
@@ -52,6 +53,7 @@ impl Cache {
         let mut new_column_store = ColumnStorage::StringStorage {
             column: Column::new(name, display_name, default_value),
             data: vec![],
+            column_type: ColumnStorageDataType::String,
         };
 
         self.fill_in_column_store(&mut new_column_store);
@@ -70,6 +72,7 @@ impl Cache {
         let mut new_column_store = ColumnStorage::BooleanStorage {
             column: Column::new(name, display_name, default_value),
             data: vec![],
+            column_type: ColumnStorageDataType::Boolean,
         };
 
         self.fill_in_column_store(&mut new_column_store);
@@ -88,6 +91,7 @@ impl Cache {
         let mut new_column_store = ColumnStorage::F64Storage {
             column: Column::new(name, display_name, default_value),
             data: vec![],
+            column_type: ColumnStorageDataType::F64,
         };
 
         self.fill_in_column_store(&mut new_column_store);
@@ -108,6 +112,7 @@ impl Cache {
             column: Column::new(name, display_name, default_value),
             data: vec![],
             format: format.parse().unwrap(),
+            column_type: ColumnStorageDataType::TimeDate,
         };
 
         self.fill_in_column_store(&mut new_column_store);
@@ -134,6 +139,7 @@ impl Cache {
             column: Column::new(name, display_name, default_value),
             data: vec![],
             allowed_values: full_allowed_values,
+            column_type: ColumnStorageDataType::Enumerated,
         };
 
         self.fill_in_column_store(&mut new_column_store);
@@ -236,10 +242,10 @@ impl Cache {
         Ok(row)
     }
 
-    pub fn get_columns(&self) -> Vec<&Column> {
+    pub fn get_metadata(&self) -> Vec<ColumnMetadata> {
         self.column_stores
             .iter()
-            .map(|column_store| column_store.get_column())
+            .map(|column_store| ColumnMetadata::new(column_store))
             .collect()
     }
 

@@ -1,4 +1,5 @@
 use data_cache::api::cache::{Cache, CacheError};
+use data_cache::api::column_storage::ColumnStorageDataType;
 use uuid::Uuid;
 
 fn create_flavors() -> Vec<String> {
@@ -317,10 +318,12 @@ fn test_invalid_row_format() {
 fn test_common_column_data() {
     let cache = create_cache().unwrap();
 
-    let columns = cache.get_columns();
-    assert_eq!(columns[0].name, "name".to_string());
-    assert_eq!(columns[1].display_name, "Verified".to_string());
-    assert_eq!(columns[2].default_value, "0".to_string());
+    let metadata = cache.get_metadata();
+    assert_eq!(metadata[0].name, "name".to_string());
+    assert_eq!(metadata[1].display_name, "Verified".to_string());
+    assert_eq!(metadata[2].default_value, "0".to_string());
+    assert_eq!(metadata[3].data_type, ColumnStorageDataType::TimeDate);
+    assert_eq!(metadata[3].format, "%Y-%m-%d %H:%M:%S".to_string());
 }
 
 #[test]

@@ -1,8 +1,8 @@
 use std::error::Error;
+use std::fmt;
 use std::fmt::{Display, Formatter};
 use std::num::ParseFloatError;
 use std::str::ParseBoolError;
-use std::{error, fmt};
 use uuid::Uuid;
 
 #[derive(Debug)]
@@ -46,8 +46,8 @@ impl Display for CacheError {
     }
 }
 
-impl error::Error for CacheError {
-    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+impl Error for CacheError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             CacheError::GuidNotFound(..) => None,
             CacheError::DuplicateColumn(..) => None,
@@ -66,8 +66,8 @@ impl From<ParseFloatError> for CacheError {
 
 // implementing the From trait allows us to use the ? operator
 impl From<chrono::ParseError> for CacheError {
-    fn from(chrono_parse_errror: chrono::ParseError) -> Self {
-        CacheError::ParseError(Box::new(chrono_parse_errror))
+    fn from(parse_error: chrono::ParseError) -> Self {
+        CacheError::ParseError(Box::new(parse_error))
     }
 }
 

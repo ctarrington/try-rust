@@ -1,30 +1,45 @@
 use crate::api::cache_error::CacheError;
 use crate::api::column::Column;
 use crate::api::parsers::{parse_bool, parse_date_time, parse_f64, parse_string};
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum ColumnStorageDataType {
+    String,
+    Boolean,
+    F64,
+    TimeDate,
+    Enumerated,
+}
+
 #[derive(Debug, PartialEq)]
 
 pub enum ColumnStorage {
     StringStorage {
         column: Column,
         data: Vec<Option<String>>,
+        column_type: ColumnStorageDataType,
     },
     BooleanStorage {
         column: Column,
         data: Vec<Option<bool>>,
+        column_type: ColumnStorageDataType,
     },
     F64Storage {
         column: Column,
         data: Vec<Option<f64>>,
+        column_type: ColumnStorageDataType,
     },
     TimeDateStorage {
         column: Column,
         data: Vec<Option<chrono::NaiveDateTime>>,
         format: String,
+        column_type: ColumnStorageDataType,
     },
     EnumeratedStorage {
         column: Column,
         data: Vec<Option<String>>,
         allowed_values: Vec<String>,
+        column_type: ColumnStorageDataType,
     },
 }
 
@@ -63,15 +78,15 @@ where
 impl ColumnStorage {
     pub fn add_value(&mut self, value: &str) -> Result<Option<()>, CacheError> {
         match self {
-            ColumnStorage::BooleanStorage { data, column } => {
+            ColumnStorage::BooleanStorage { data, column, .. } => {
                 let parsed_value = parse_bool(value, column.default_value.as_str());
                 push_with_check(data, parsed_value)
             }
-            ColumnStorage::F64Storage { data, column } => {
+            ColumnStorage::F64Storage { data, column, .. } => {
                 let parsed_value = parse_f64(value, column.default_value.as_str());
                 push_with_check(data, parsed_value)
             }
-            ColumnStorage::StringStorage { data, column } => {
+            ColumnStorage::StringStorage { data, column, .. } => {
                 let parsed_value = parse_string(value, column.default_value.as_str());
                 push_with_check(data, parsed_value)
             }
@@ -79,6 +94,7 @@ impl ColumnStorage {
                 data,
                 column,
                 format,
+                ..
             } => {
                 let parsed_value = parse_date_time(value, column.default_value.as_str(), format);
                 push_with_check(data, parsed_value)
@@ -87,6 +103,7 @@ impl ColumnStorage {
                 data,
                 column,
                 allowed_values,
+                ..
             } => {
                 let parsed_value = parse_string(value, column.default_value.as_str());
                 match parsed_value {
@@ -190,6 +207,23 @@ impl ColumnStorage {
         }
     }
 
+    pub fn get_data_type(&self) -> ColumnStorageDataType {
+        match self {
+            ColumnStorage::BooleanStorage { column_type, .. } => column_type.clone(),
+            ColumnStorage::F64Storage { column_type, .. } => column_type.clone(),
+            ColumnStorage::StringStorage { column_type, .. } => column_type.clone(),
+            ColumnStorage::TimeDateStorage { column_type, .. } => column_type.clone(),
+            ColumnStorage::EnumeratedStorage { column_type, .. } => column_type.clone(),
+        }
+    }
+
+    pub fn get_format(&self) -> String {
+        match self {
+            ColumnStorage::TimeDateStorage { format, .. } => format.clone(),
+            _ => "".to_string(),
+        }
+    }
+
     pub fn get_column(&self) -> &Column {
         match self {
             ColumnStorage::BooleanStorage { column, .. } => column,
@@ -209,6 +243,7 @@ mod tests {
         ColumnStorage::BooleanStorage {
             column: Column::new("verified", "Verified", default_value),
             data: vec![],
+            column_type: ColumnStorageDataType::Boolean,
         }
     }
 
@@ -216,6 +251,7 @@ mod tests {
         ColumnStorage::F64Storage {
             column: Column::new("price", "Price", default_value),
             data: vec![],
+            column_type: ColumnStorageDataType::F64,
         }
     }
 
@@ -223,14 +259,16 @@ mod tests {
         ColumnStorage::StringStorage {
             column: Column::new("name", "Name", default_value),
             data: vec![],
+            column_type: ColumnStorageDataType::String,
         }
     }
 
     fn create_time_date_storage() -> ColumnStorage {
         ColumnStorage::TimeDateStorage {
-            column: Column::new("starttime", "Start Time", ""),
+            column: Column::new("start_time", "Start Time", ""),
             data: vec![],
             format: "%Y-%m-%d %H:%M:%S".to_string(),
+            column_type: ColumnStorageDataType::TimeDate,
         }
     }
 
@@ -242,6 +280,7 @@ mod tests {
             column: Column::new("flavor", "Flavor", default_value),
             data: vec![],
             allowed_values,
+            column_type: ColumnStorageDataType::Enumerated,
         }
     }
 

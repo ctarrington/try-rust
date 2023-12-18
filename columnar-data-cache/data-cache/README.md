@@ -36,8 +36,8 @@ cargo watch -x 'clippy'
 
 * expose information from the column - name, display name, default value X
 * expose information about the cached data - number of rows, number of columns  X
-* expose column storage details - values, default value, format, type
-        * call it metadata? and have one per column storage type? readonly summary enum?
+* expose column storage details - values, default value, format, type X
+        * call it metadata? and have one per column storage type? readonly summary enum? X
 * how to expose allowed values for enum? and scalars...  
 
 

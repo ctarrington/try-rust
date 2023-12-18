@@ -243,10 +243,7 @@ impl Cache {
     }
 
     pub fn get_metadata(&self) -> Vec<ColumnMetadata> {
-        self.column_stores
-            .iter()
-            .map(|column_store| ColumnMetadata::new(column_store))
-            .collect()
+        self.column_stores.iter().map(ColumnMetadata::new).collect()
     }
 
     pub fn row_len(&self) -> usize {

@@ -1,7 +1,7 @@
 use rand::Rng;
 use std::sync::{mpsc, Arc, Mutex};
 use std::time::Duration;
-use std::{cmp, thread, time};
+use std::{cmp, env, thread, time};
 
 /// simplistic proof of work scheme to introduce a little variability how long a process takes
 /// picks a random number until it is at or below a target
@@ -162,8 +162,11 @@ fn tick_pipeline(count: usize, thread_count: usize) {
 }
 
 fn main() {
-    let thing_count = 100_000;
-    let thread_count = 4;
+    let args: Vec<String>  = env::args().collect();
+    let thread_count: usize = if args.len() < 2 {2 as usize} else {args[1].parse::<usize>().unwrap()};
+    let thing_count: usize = if args.len() < 3 {1_000_000 as usize} else {args[2].parse::<usize>().unwrap()};
+    println!("thread_count: {}", thread_count);
+    println!("thing_count: {}", thing_count);
 
     let begin = time::Instant::now();
     tick_concurrent(thing_count, thread_count);

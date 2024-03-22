@@ -9,4 +9,5 @@ edition = "2021"
 tokio = { version = "1.2", features = ["full"] }
 warp = "0.3"
 serde = { version = "1.0.197", features = ["derive"] }
+rand = "0.8.5"
 

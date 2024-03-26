@@ -1,4 +1,5 @@
 use serde::Serialize;
+use warp::http::Method;
 use warp::reject::Reject;
 use warp::Filter;
 use warp::Rejection;
@@ -41,6 +42,7 @@ async fn get_things() -> Result<impl Reply, Rejection> {
         },
     ];
 
+    // Note: if there is no path to success then the compiler will complain that it cannot infer the type
     let value = random::<f64>();
     return if value > 0.3 {
         Ok(warp::reply::json(&things))
@@ -65,16 +67,32 @@ async fn error_handler(_err: Rejection) -> Result<impl Reply, Rejection> {
 
 #[tokio::main]
 async fn main() {
-    let get_things_route = warp::path!("things")
-        .and(warp::get())
-        .and_then(get_things)
-        .or(warp::path!("scary-things")
-            .and(warp::get())
-            .and_then(get_scary_things))
+    // http://localhost:3030/things
+    // http://localhost:3030/scary-things
+
+    /*
+    curl -v -X OPTIONS http://localhost:3030/scary-things \
+    -H "Access-Control-Request-Method: PUT" \
+    -H "Access-Control-Request-Headers: content-type" \
+    -H "Origin: https://www.example.com"
+    */
+    let cors = warp::cors()
+        .allow_origin("https://www.example.com")
+        .allow_headers(vec!["content-type"])
+        .allow_methods(&[Method::PUT, Method::DELETE, Method::GET, Method::POST]);
+
+    let get_things_route = warp::get()
+        .and(warp::path("scary-things"))
+        .and(warp::path::end())
+        .and_then(get_scary_things)
+        .or(warp::get()
+            .and(warp::path("things"))
+            .and(warp::path::end())
+            .and_then(get_things))
         .recover(error_handler);
 
     println!("Server started at http://localhost:3030/things");
-    warp::serve(get_things_route)
-        .run(([127, 0, 0, 1], 3030))
-        .await;
+
+    let routes = get_things_route.with(cors);
+    warp::serve(routes).run(([127, 0, 0, 1], 3030)).await;
 }

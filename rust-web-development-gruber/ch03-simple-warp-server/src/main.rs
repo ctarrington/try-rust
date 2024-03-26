@@ -67,9 +67,6 @@ async fn error_handler(_err: Rejection) -> Result<impl Reply, Rejection> {
 
 #[tokio::main]
 async fn main() {
-    // http://localhost:3030/things
-    // http://localhost:3030/scary-things
-
     /*
     curl -v -X OPTIONS http://localhost:3030/scary-things \
     -H "Access-Control-Request-Method: PUT" \
@@ -81,15 +78,19 @@ async fn main() {
         .allow_headers(vec!["content-type"])
         .allow_methods(&[Method::PUT, Method::DELETE, Method::GET, Method::POST]);
 
-    let get_things_route = warp::get()
+    // http://localhost:3030/scary-things
+    let scary_things_route = warp::get()
         .and(warp::path("scary-things"))
         .and(warp::path::end())
-        .and_then(get_scary_things)
-        .or(warp::get()
-            .and(warp::path("things"))
-            .and(warp::path::end())
-            .and_then(get_things))
-        .recover(error_handler);
+        .and_then(get_scary_things);
+
+    // http://localhost:3030/things
+    let things_route = warp::get()
+        .and(warp::path("things"))
+        .and(warp::path::end())
+        .and_then(get_things);
+
+    let get_things_route = scary_things_route.or(things_route).recover(error_handler);
 
     println!("Server started at http://localhost:3030/things");
 

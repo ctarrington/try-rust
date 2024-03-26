@@ -1,4 +1,5 @@
 use serde::Serialize;
+use warp::filters::cors::CorsForbidden;
 use warp::http::Method;
 use warp::reject::Reject;
 use warp::Filter;
@@ -51,18 +52,25 @@ async fn get_things() -> Result<impl Reply, Rejection> {
     };
 }
 
-async fn error_handler(_err: Rejection) -> Result<impl Reply, Rejection> {
-    if let Some(InvalidThing) = _err.find() {
+async fn error_handler(err: Rejection) -> Result<impl Reply, Rejection> {
+    if let Some(InvalidThing) = err.find() {
         return Ok(warp::reply::with_status(
             warp::reply::json(&"Invalid thing"),
             warp::http::StatusCode::BAD_REQUEST,
         ));
-    } else {
-        Ok(warp::reply::with_status(
-            warp::reply::json(&"Not found"),
-            warp::http::StatusCode::NOT_FOUND,
-        ))
     }
+
+    if let Some(error) = err.find::<CorsForbidden>() {
+        return Ok(warp::reply::with_status(
+            warp::reply::json(&error.to_string()),
+            warp::http::StatusCode::FORBIDDEN,
+        ));
+    }
+
+    return Ok(warp::reply::with_status(
+        warp::reply::json(&"Route not found"),
+        warp::http::StatusCode::NOT_FOUND,
+    ));
 }
 
 #[tokio::main]
@@ -90,10 +98,13 @@ async fn main() {
         .and(warp::path::end())
         .and_then(get_things);
 
-    let get_things_route = scary_things_route.or(things_route).recover(error_handler);
+    let routes = scary_things_route
+        .or(things_route)
+        .recover(error_handler)
+        .with(cors);
 
-    println!("Server started at http://localhost:3030/things");
-
-    let routes = get_things_route.with(cors);
+    println!("Server started at http://localhost:3030/");
+    println!("http://localhost:3030/things can fail");
+    println!("http://localhost:3030/scary-things will always succeed");
     warp::serve(routes).run(([127, 0, 0, 1], 3030)).await;
 }

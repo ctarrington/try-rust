@@ -1,12 +1,13 @@
 use std::fmt;
 use std::fmt::Formatter;
+use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct Person {
     pub name: String,
     pub nick_name: String,
     pub age: u8,
-    pub friend: Option<Box<Person>>,
+    pub friend: Option<Rc<Person>>,
 }
 
 impl Person {
@@ -48,7 +49,7 @@ fn test_person() {
     assert_eq!("Joe", joe.name);
     assert_eq!(55, joe.age);
 
-    // typed destructuring ftw. ignore fields with the dot dot
+    // typed destructuring ftw. ignore fields with the dot then dot
     // partial move
     let Person {
         name: mut joe_name, ..
@@ -67,7 +68,7 @@ fn test_person() {
         name: String::from("Jane"),
         nick_name: String::from("Janey"),
         age: 54,
-        friend: Some(Box::new(Person {
+        friend: Some(Rc::new(Person {
             name: String::from("Fred"),
             nick_name: String::from("Freddy"),
             age: 55,
@@ -81,4 +82,51 @@ fn test_person() {
     assert_eq!(54, jane.age);
     assert_eq!("Janey", jane.nick_name);
     assert_eq!("Freddy", jane.friend.unwrap().nick_name);
+}
+
+#[test]
+fn test_mutual_friend() {
+    let mut joe = Person {
+        name: String::from("Joe"),
+        nick_name: String::from("Joey"),
+        age: 55,
+        friend: None,
+    };
+
+    assert_eq!("Joe is 55 years old. They are lonely", format!("{}", joe));
+    joe.increase_age();
+    assert_eq!("Joe is 56 years old. They are lonely", format!("{}", joe));
+
+    let joe_rc = Rc::new(joe);
+
+    let mut jane = Person {
+        name: String::from("Jane"),
+        nick_name: String::from("Janey"),
+        age: 54,
+        friend: None,
+    };
+
+    assert_eq!("Jane is 54 years old. They are lonely", format!("{}", jane));
+
+    jane.friend = Some(joe_rc.clone());
+
+    let betty = Person {
+        name: String::from("Betty"),
+        nick_name: String::from("Bets"),
+        age: 53,
+        friend: Some(joe_rc.clone()),
+    };
+
+    assert_eq!(
+        "Joe is 56 years old. They are lonely",
+        format!("{}", joe_rc)
+    );
+    assert_eq!(
+        "Jane is 54 years old. They have a friend, Joe who calls them Janey",
+        format!("{}", jane)
+    );
+    assert_eq!(
+        "Betty is 53 years old. They have a friend, Joe who calls them Bets",
+        format!("{}", betty)
+    );
 }

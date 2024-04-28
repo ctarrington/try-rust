@@ -1,4 +1,5 @@
 use std::mem;
+use std::rc::Rc;
 
 mod people;
 use self::people::Person;
@@ -6,6 +7,8 @@ use self::people::Person;
 
 mod list;
 use self::list::List;
+
+mod holder;
 
 enum Move {
     Up(i8),
@@ -51,7 +54,7 @@ fn main() {
         name: String::from("Wilma"),
         nick_name: String::from("Wilma"),
         age: 15,
-        friend: Option::Some(Box::new(fred)),
+        friend: Option::Some(Rc::new(fred)),
     };
 
     println!("wilma = {:?}", wilma);

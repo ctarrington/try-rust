@@ -1,5 +1,4 @@
 use std::mem;
-use std::rc::Rc;
 
 mod people;
 use self::people::Person;
@@ -54,7 +53,7 @@ fn main() {
         name: String::from("Wilma"),
         nick_name: String::from("Wilma"),
         age: 15,
-        friend: Option::Some(Rc::new(fred)),
+        friend: Option::Some(&fred),
     };
 
     println!("wilma = {:?}", wilma);

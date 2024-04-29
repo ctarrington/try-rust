@@ -1,22 +1,21 @@
 use std::fmt;
 use std::fmt::Formatter;
-use std::rc::Rc;
 
 #[derive(Debug)]
-pub struct Person {
+pub struct Person<'a> {
     pub name: String,
     pub nick_name: String,
     pub age: u8,
-    pub friend: Option<Rc<Person>>,
+    pub friend: Option<&'a Person<'a>>,
 }
 
-impl Person {
+impl Person<'_> {
     pub fn increase_age(&mut self) {
         self.age += 1;
     }
 }
 
-impl fmt::Display for Person {
+impl fmt::Display for Person<'_> {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         write!(
             formatter,
@@ -64,16 +63,18 @@ fn test_person() {
     joe_name = joe_name.to_uppercase();
     assert_eq!("JOE", joe_name);
 
+    let fred = Person {
+        name: String::from("Fred"),
+        nick_name: String::from("Freddy"),
+        age: 55,
+        friend: None,
+    };
+
     let jane = Person {
         name: String::from("Jane"),
         nick_name: String::from("Janey"),
         age: 54,
-        friend: Some(Rc::new(Person {
-            name: String::from("Fred"),
-            nick_name: String::from("Freddy"),
-            age: 55,
-            friend: None,
-        })),
+        friend: Some(&fred),
     };
 
     let jane_name = jane.name;
@@ -97,8 +98,6 @@ fn test_mutual_friend() {
     joe.increase_age();
     assert_eq!("Joe is 56 years old. They are lonely", format!("{}", joe));
 
-    let joe_rc = Rc::new(joe);
-
     let mut jane = Person {
         name: String::from("Jane"),
         nick_name: String::from("Janey"),
@@ -108,19 +107,16 @@ fn test_mutual_friend() {
 
     assert_eq!("Jane is 54 years old. They are lonely", format!("{}", jane));
 
-    jane.friend = Some(joe_rc.clone());
+    jane.friend = Some(&joe);
 
     let betty = Person {
         name: String::from("Betty"),
         nick_name: String::from("Bets"),
         age: 53,
-        friend: Some(joe_rc.clone()),
+        friend: Some(&joe),
     };
 
-    assert_eq!(
-        "Joe is 56 years old. They are lonely",
-        format!("{}", joe_rc)
-    );
+    assert_eq!("Joe is 56 years old. They are lonely", format!("{}", joe));
     assert_eq!(
         "Jane is 54 years old. They have a friend, Joe who calls them Janey",
         format!("{}", jane)

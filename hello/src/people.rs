@@ -77,6 +77,9 @@ fn test_person() {
         friend: Some(&fred),
     };
 
+    let jane_name_ref = &jane.name;
+    assert_eq!("Jane", *jane_name_ref);
+
     let jane_name = jane.name;
     assert_eq!("Jane", jane_name);
     // assert_eq!("Jane", jane.name); // can not access jane.name since it moved

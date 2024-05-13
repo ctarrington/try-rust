@@ -7,6 +7,7 @@ use self::people::Person;
 mod list;
 use self::list::List;
 
+mod distance;
 mod holder;
 mod units;
 

@@ -479,7 +479,8 @@ fn test_generic_in_traits() {
     assert_eq!(32, *boxed_int);
 
     let boxed_thing = Thing(12, 22).box_me();
-    let Thing(_, second) = *boxed_thing;
+    let Thing(first, second) = *boxed_thing;
+    assert_eq!(12, first);
     assert_eq!(22, second);
 
     let boxed_from_other_thing = OtherThing {

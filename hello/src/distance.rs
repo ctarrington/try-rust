@@ -11,7 +11,7 @@ struct Distance {
 enum DistanceParseError {
     InvalidUnit { raw_unit: String },
     InvalidValue { raw_value: String },
-    InvalidFormat,
+    InvalidFormat { raw: String },
 }
 
 impl Display for DistanceParseError {
@@ -37,10 +37,10 @@ impl error::Error for DistanceParseError {
 impl TryFrom<String> for Distance {
     type Error = DistanceParseError;
 
-    fn try_from(s: String) -> Result<Self, Self::Error> {
-        let parts: Vec<&str> = s.split(' ').collect();
+    fn try_from(raw: String) -> Result<Self, Self::Error> {
+        let parts: Vec<&str> = raw.trim().split(' ').collect();
         if parts.len() != 2 {
-            return Err(DistanceParseError::InvalidFormat);
+            return Err(DistanceParseError::InvalidFormat { raw });
         }
 
         let raw_value = parts[0];
@@ -55,29 +55,8 @@ impl TryFrom<String> for Distance {
             }
         };
 
-        let unit = match raw_unit {
-            "m" => DistanceUnit::Meters,
-            "cm" => DistanceUnit::Centimeters,
-            "mm" => DistanceUnit::Millimeters,
-            "km" => DistanceUnit::Kilometers,
-            _ => {
-                return Err(DistanceParseError::InvalidUnit {
-                    raw_unit: raw_unit.to_string(),
-                })
-            }
-        };
-
-        let value_in_meters = match unit {
-            DistanceUnit::Meters => value,
-            DistanceUnit::Centimeters => value / 100.0,
-            DistanceUnit::Millimeters => value / 1000.0,
-            DistanceUnit::Kilometers => value * 1000.0,
-        };
-
-        Ok(Distance {
-            value_in_meters,
-            unit,
-        })
+        let unit: DistanceUnit = raw_unit.to_string().try_into()?;
+        Ok(unit.distance(value))
     }
 }
 
@@ -89,6 +68,20 @@ enum DistanceUnit {
     Kilometers,
 }
 
+impl TryFrom<String> for DistanceUnit {
+    type Error = DistanceParseError;
+
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        match s.as_str() {
+            "m" => Ok(DistanceUnit::Meters),
+            "cm" => Ok(DistanceUnit::Centimeters),
+            "mm" => Ok(DistanceUnit::Millimeters),
+            "km" => Ok(DistanceUnit::Kilometers),
+            _ => Err(DistanceParseError::InvalidUnit { raw_unit: s }),
+        }
+    }
+}
+
 impl DistanceUnit {
     fn value(&self, distance: &Distance) -> f64 {
         match self {
@@ -96,6 +89,18 @@ impl DistanceUnit {
             DistanceUnit::Centimeters => distance.value_in_meters * 100.0,
             DistanceUnit::Millimeters => distance.value_in_meters * 1000.0,
             DistanceUnit::Kilometers => distance.value_in_meters / 1000.0,
+        }
+    }
+
+    fn distance(self, value: f64) -> Distance {
+        Distance {
+            value_in_meters: match self {
+                DistanceUnit::Meters => value,
+                DistanceUnit::Centimeters => value / 100.0,
+                DistanceUnit::Millimeters => value / 1000.0,
+                DistanceUnit::Kilometers => value * 1000.0,
+            },
+            unit: self,
         }
     }
 }
@@ -128,6 +133,9 @@ fn test_distance() {
     assert_eq!(0.005, DistanceUnit::Meters.value(&mm));
     assert_eq!(0.000005, DistanceUnit::Kilometers.value(&mm));
     assert_eq!(5.0, DistanceUnit::Millimeters.value(&mm));
+
+    let cm = DistanceUnit::Centimeters.distance(5.0);
+    assert_eq!(0.05, cm.value_in_meters);
 }
 
 #[test]
@@ -136,7 +144,7 @@ fn test_distance_try_from() {
     assert_eq!(5.0, m.value_in_meters);
     assert_eq!(DistanceUnit::Meters, m.unit);
 
-    let mm = Distance::try_from("5 mm".to_string()).unwrap();
+    let mm = Distance::try_from("5 mm ".to_string()).unwrap();
     assert_eq!(0.005, mm.value_in_meters);
 
     let cm = Distance::try_from("5 cm".to_string()).unwrap();
@@ -156,6 +164,12 @@ fn test_distance_try_from() {
     let invalid_format = Distance::try_from("5".to_string());
     assert!(matches!(
         invalid_format,
-        Err(DistanceParseError::InvalidFormat)
+        Err(DistanceParseError::InvalidFormat { raw }) if raw == "5"
+    ));
+
+    let invalid_format = Distance::try_from("".to_string());
+    assert!(matches!(
+        invalid_format,
+        Err(DistanceParseError::InvalidFormat { raw }) if raw == ""
     ));
 }

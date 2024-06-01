@@ -34,8 +34,10 @@ impl error::Error for DistanceParseError {
     }
 }
 
-impl Distance {
-    fn parse(s: &str) -> Result<Distance, DistanceParseError> {
+impl TryFrom<String> for Distance {
+    type Error = DistanceParseError;
+
+    fn try_from(s: String) -> Result<Self, Self::Error> {
         let parts: Vec<&str> = s.split(' ').collect();
         if parts.len() != 2 {
             return Err(DistanceParseError::InvalidFormat);
@@ -74,30 +76,6 @@ impl Distance {
             value_in_meters,
             unit,
         })
-    }
-}
-
-impl From<String> for Distance {
-    fn from(s: String) -> Self {
-        let parts: Vec<&str> = s.split(' ').collect();
-        let raw_value = parts[0].parse::<f64>().unwrap();
-        let unit = match parts[1] {
-            "m" => DistanceUnit::Meters,
-            "mm" => DistanceUnit::Millimeters,
-            "km" => DistanceUnit::Kilometers,
-            _ => panic!("Invalid unit"),
-        };
-
-        let value_in_meters = match unit {
-            DistanceUnit::Meters => raw_value,
-            DistanceUnit::Millimeters => raw_value / 1000.0,
-            DistanceUnit::Kilometers => raw_value * 1000.0,
-        };
-
-        Distance {
-            value_in_meters,
-            unit,
-        }
     }
 }
 
@@ -149,33 +127,28 @@ fn test_distance() {
 }
 
 #[test]
-fn test_distance_from_string() {
-    let m: Distance = "5 m".to_string().into();
+fn test_distance_try_from() {
+    let m = Distance::try_from("5 m".to_string()).unwrap();
     assert_eq!(5.0, m.value_in_meters);
     assert_eq!(DistanceUnit::Meters, m.unit);
 
-    let mm: Distance = "5 mm".to_string().into();
-    assert_eq!(0.005, mm.value_in_meters);
-}
-
-#[test]
-fn test_distance_parse() {
-    let m = Distance::parse("5 m").unwrap();
-    assert_eq!(5.0, m.value_in_meters);
-    assert_eq!(DistanceUnit::Meters, m.unit);
-
-    let mm = Distance::parse("5 mm").unwrap();
+    let mm = Distance::try_from("5 mm".to_string()).unwrap();
     assert_eq!(0.005, mm.value_in_meters);
 
-    let km = Distance::parse("5 km").unwrap();
-    assert_eq!(5000.0, km.value_in_meters);
+    assert!(matches!(
+        Distance::try_from("5 cubits".to_string()).unwrap_err(),
+        DistanceParseError::InvalidUnit {raw_unit} if raw_unit == "cubits"
+    ));
 
-    let invalid_unit = Distance::parse("5 cm");
-    assert!(invalid_unit.is_err());
+    let invalid_value = Distance::try_from("5.5.5 m".to_string());
+    assert!(matches!(
+        invalid_value,
+        Err(DistanceParseError::InvalidValue { raw_value }) if raw_value == "5.5.5"
+    ));
 
-    let invalid_value = Distance::parse("5.5.5 m");
-    assert!(invalid_value.is_err());
-
-    let invalid_format = Distance::parse("5");
-    assert!(invalid_format.is_err());
+    let invalid_format = Distance::try_from("5".to_string());
+    assert!(matches!(
+        invalid_format,
+        Err(DistanceParseError::InvalidFormat)
+    ));
 }

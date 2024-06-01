@@ -57,6 +57,7 @@ impl TryFrom<String> for Distance {
 
         let unit = match raw_unit {
             "m" => DistanceUnit::Meters,
+            "cm" => DistanceUnit::Centimeters,
             "mm" => DistanceUnit::Millimeters,
             "km" => DistanceUnit::Kilometers,
             _ => {
@@ -68,6 +69,7 @@ impl TryFrom<String> for Distance {
 
         let value_in_meters = match unit {
             DistanceUnit::Meters => value,
+            DistanceUnit::Centimeters => value / 100.0,
             DistanceUnit::Millimeters => value / 1000.0,
             DistanceUnit::Kilometers => value * 1000.0,
         };
@@ -82,6 +84,7 @@ impl TryFrom<String> for Distance {
 #[derive(Debug, PartialEq)]
 enum DistanceUnit {
     Meters,
+    Centimeters,
     Millimeters,
     Kilometers,
 }
@@ -90,6 +93,7 @@ impl DistanceUnit {
     fn value(&self, distance: &Distance) -> f64 {
         match self {
             DistanceUnit::Meters => distance.value_in_meters,
+            DistanceUnit::Centimeters => distance.value_in_meters * 100.0,
             DistanceUnit::Millimeters => distance.value_in_meters * 1000.0,
             DistanceUnit::Kilometers => distance.value_in_meters / 1000.0,
         }
@@ -134,6 +138,9 @@ fn test_distance_try_from() {
 
     let mm = Distance::try_from("5 mm".to_string()).unwrap();
     assert_eq!(0.005, mm.value_in_meters);
+
+    let cm = Distance::try_from("5 cm".to_string()).unwrap();
+    assert_eq!(0.05, cm.value_in_meters);
 
     assert!(matches!(
         Distance::try_from("5 cubits".to_string()).unwrap_err(),

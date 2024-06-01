@@ -436,13 +436,7 @@ fn test_traits() {
 
 #[test]
 fn test_generic_in_traits() {
-    // the bound that T must implement Sized is implied but maybe it makes sense to type it out
-    // the compiler assumes itSized
-    trait Boxable<T: Sized> {
-        fn box_it(value: T) -> Box<T> {
-            Box::<T>::new(value)
-        }
-
+    trait Boxable<T> {
         fn box_me(&self) -> Box<T>;
     }
 
@@ -466,10 +460,6 @@ fn test_generic_in_traits() {
     }
 
     impl Boxable<Thing> for OtherThing {
-        fn box_it(value: Thing) -> Box<Thing> {
-            Box::new(value)
-        }
-
         fn box_me(&self) -> Box<Thing> {
             Box::new(Thing(self.first, self.second))
         }

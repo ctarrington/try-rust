@@ -7,7 +7,7 @@ struct Distance {
     unit: DistanceUnit,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum DistanceParseError {
     InvalidUnit { raw_unit: String },
     InvalidValue { raw_value: String },
@@ -156,28 +156,40 @@ fn test_distance_try_from() {
     let cm = Distance::try_from("5 cm".to_string()).unwrap();
     assert_eq!(0.05, cm.value_in_meters);
 
-    assert!(matches!(
-        Distance::try_from("5 cubits".to_string()).unwrap_err(),
-        DistanceParseError::InvalidUnit {raw_unit} if raw_unit == "cubits"
-    ));
+    let error = Distance::try_from("5 cubits".to_string()).unwrap_err();
+    assert_eq!(
+        DistanceParseError::InvalidUnit {
+            raw_unit: "cubits".to_string()
+        },
+        error
+    );
 
-    let invalid_value = Distance::try_from("5.5.5 m".to_string());
-    assert!(matches!(
-        invalid_value,
-        Err(DistanceParseError::InvalidValue { raw_value }) if raw_value == "5.5.5"
-    ));
+    let error = Distance::try_from("5.5.5 m".to_string()).unwrap_err();
+    assert_eq!(
+        DistanceParseError::InvalidValue {
+            raw_value: "5.5.5".to_string()
+        },
+        error
+    );
 
-    let invalid_format = Distance::try_from("5".to_string());
-    assert!(matches!(
-        invalid_format,
-        Err(DistanceParseError::InvalidFormat { raw }) if raw == "5"
-    ));
+    let error = Distance::try_from("5".to_string()).unwrap_err();
+    assert_eq!(
+        DistanceParseError::InvalidFormat {
+            raw: "5".to_string()
+        },
+        error
+    );
 
-    let invalid_format = Distance::try_from("".to_string());
-    assert!(matches!(
-        invalid_format,
-        Err(DistanceParseError::InvalidFormat { raw }) if raw == ""
-    ));
+    let error = Distance::try_from("".to_string()).unwrap_err();
+    assert_eq!(
+        DistanceParseError::InvalidFormat {
+            raw: "".to_string()
+        },
+        error
+    );
+
+    let valid: Distance = "5 m".to_string().try_into().unwrap();
+    assert_eq!(5.0, valid.value_in_meters);
 }
 
 #[test]

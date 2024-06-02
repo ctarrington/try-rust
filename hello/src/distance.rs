@@ -23,7 +23,9 @@ impl Display for DistanceParseError {
             DistanceParseError::InvalidValue { ref raw_value } => {
                 write!(f, "Invalid value: {}", raw_value)
             }
-            _ => write!(f, "Invalid format"),
+            DistanceParseError::InvalidFormat { ref raw } => {
+                write!(f, "Invalid format: {}", raw)
+            }
         }
     }
 }
@@ -176,4 +178,16 @@ fn test_distance_try_from() {
         invalid_format,
         Err(DistanceParseError::InvalidFormat { raw }) if raw == ""
     ));
+}
+
+#[test]
+fn test_format_error() {
+    let invalid_unit = Distance::try_from("5 cubits".to_string()).unwrap_err();
+    assert_eq!("Invalid unit: cubits", invalid_unit.to_string());
+
+    let invalid_value = Distance::try_from("5.5.5 m".to_string()).unwrap_err();
+    assert_eq!("Invalid value: 5.5.5", invalid_value.to_string());
+
+    let invalid_format = Distance::try_from("5".to_string()).unwrap_err();
+    assert_eq!("Invalid format: 5", invalid_format.to_string());
 }

@@ -34,27 +34,32 @@ impl error::Error for DistanceParseError {
     }
 }
 
+fn split_distance(raw: &str) -> Result<(&str, &str), DistanceParseError> {
+    let parts: Vec<&str> = raw.trim().split(' ').collect();
+    if parts.len() != 2 {
+        return Err(DistanceParseError::InvalidFormat {
+            raw: raw.to_string(),
+        });
+    }
+
+    Ok((parts[0], parts[1]))
+}
+
+fn parse_value(raw: &str) -> Result<f64, DistanceParseError> {
+    match raw.parse::<f64>() {
+        Ok(value) => Ok(value),
+        Err(_) => Err(DistanceParseError::InvalidValue {
+            raw_value: raw.to_string(),
+        }),
+    }
+}
+
 impl TryFrom<String> for Distance {
     type Error = DistanceParseError;
 
     fn try_from(raw: String) -> Result<Self, Self::Error> {
-        let parts: Vec<&str> = raw.trim().split(' ').collect();
-        if parts.len() != 2 {
-            return Err(DistanceParseError::InvalidFormat { raw });
-        }
-
-        let raw_value = parts[0];
-        let raw_unit = parts[1];
-
-        let value = match raw_value.parse::<f64>() {
-            Ok(value) => value,
-            Err(_) => {
-                return Err(DistanceParseError::InvalidValue {
-                    raw_value: raw_value.to_string(),
-                })
-            }
-        };
-
+        let (raw_value, raw_unit) = split_distance(&raw)?;
+        let value = parse_value(raw_value)?;
         let unit: DistanceUnit = raw_unit.to_string().try_into()?;
         Ok(unit.distance(value))
     }
@@ -73,33 +78,32 @@ impl TryFrom<String> for DistanceUnit {
 
     fn try_from(s: String) -> Result<Self, Self::Error> {
         match s.as_str() {
+            "km" => Ok(DistanceUnit::Kilometers),
             "m" => Ok(DistanceUnit::Meters),
             "cm" => Ok(DistanceUnit::Centimeters),
             "mm" => Ok(DistanceUnit::Millimeters),
-            "km" => Ok(DistanceUnit::Kilometers),
             _ => Err(DistanceParseError::InvalidUnit { raw_unit: s }),
         }
     }
 }
 
 impl DistanceUnit {
-    fn value(&self, distance: &Distance) -> f64 {
+    fn conversion_factor(&self) -> f64 {
         match self {
-            DistanceUnit::Meters => distance.value_in_meters,
-            DistanceUnit::Centimeters => distance.value_in_meters * 100.0,
-            DistanceUnit::Millimeters => distance.value_in_meters * 1000.0,
-            DistanceUnit::Kilometers => distance.value_in_meters / 1000.0,
+            DistanceUnit::Meters => 1.0,
+            DistanceUnit::Centimeters => 100.0,
+            DistanceUnit::Millimeters => 1000.0,
+            DistanceUnit::Kilometers => 0.001,
         }
+    }
+
+    fn value(&self, distance: &Distance) -> f64 {
+        distance.value_in_meters * self.conversion_factor()
     }
 
     fn distance(self, value: f64) -> Distance {
         Distance {
-            value_in_meters: match self {
-                DistanceUnit::Meters => value,
-                DistanceUnit::Centimeters => value / 100.0,
-                DistanceUnit::Millimeters => value / 1000.0,
-                DistanceUnit::Kilometers => value * 1000.0,
-            },
+            value_in_meters: value / self.conversion_factor(),
             unit: self,
         }
     }

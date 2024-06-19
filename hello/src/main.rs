@@ -1,3 +1,5 @@
+use crate::distance::Distance;
+use crate::holder::Holder;
 use std::mem;
 
 mod people;
@@ -71,6 +73,20 @@ fn main() {
         }),
     };
     println!("list = {:?}", list);
+    if let List::<u32>::Node { value, next } = list {
+        println!("next = {:?}", next);
+        println!("value = {:?}", value);
+    };
+
+    let holder = Holder { value: 42 };
+    assert_eq!(42, holder.value);
+    println!("{:?}", holder);
+
+    let m = Distance::try_from("5 m".to_string()).unwrap();
+    println!("{:?}", m);
+    println!("{:?}", m.value_in_meters);
+    println!("{:?}", m.unit);
+    println!("{:?}", m.unit.value(&m));
 }
 
 /// requires two non zero integers
@@ -85,7 +101,7 @@ fn gcd(mut n: u64, mut m: u64) -> u64 {
             mem::swap(&mut n, &mut m);
         }
 
-        m = m % n;
+        m %= n;
     }
 
     n
@@ -326,6 +342,7 @@ fn test_modularity() {
 
     let more_stuff = copy_it(&my_stuff);
     assert_eq!(23, more_stuff.width);
+    assert_eq!(11, more_stuff.height);
 }
 
 #[test]

@@ -2,28 +2,28 @@ use std::error;
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug)]
-struct Distance {
-    value_in_meters: f64,
-    unit: DistanceUnit,
+pub(crate) struct Distance {
+    pub(crate) value_in_meters: f64,
+    pub(crate) unit: DistanceUnit,
 }
 
 #[derive(Debug, PartialEq)]
-enum DistanceParseError {
-    InvalidUnit { raw_unit: String },
-    InvalidValue { raw_value: String },
-    InvalidFormat { raw: String },
+pub enum DistanceParseError {
+    Unit { raw_unit: String },
+    Value { raw_value: String },
+    Format { raw: String },
 }
 
 impl Display for DistanceParseError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match *self {
-            DistanceParseError::InvalidUnit { ref raw_unit } => {
+            DistanceParseError::Unit { ref raw_unit } => {
                 write!(f, "Invalid unit: {}", raw_unit)
             }
-            DistanceParseError::InvalidValue { ref raw_value } => {
+            DistanceParseError::Value { ref raw_value } => {
                 write!(f, "Invalid value: {}", raw_value)
             }
-            DistanceParseError::InvalidFormat { ref raw } => {
+            DistanceParseError::Format { ref raw } => {
                 write!(f, "Invalid format: {}", raw)
             }
         }
@@ -39,7 +39,7 @@ impl error::Error for DistanceParseError {
 fn split_distance(raw: &str) -> Result<(&str, &str), DistanceParseError> {
     let parts: Vec<&str> = raw.trim().split(' ').collect();
     if parts.len() != 2 {
-        return Err(DistanceParseError::InvalidFormat {
+        return Err(DistanceParseError::Format {
             raw: raw.to_string(),
         });
     }
@@ -50,7 +50,7 @@ fn split_distance(raw: &str) -> Result<(&str, &str), DistanceParseError> {
 fn parse_value(raw: &str) -> Result<f64, DistanceParseError> {
     match raw.parse::<f64>() {
         Ok(value) => Ok(value),
-        Err(_) => Err(DistanceParseError::InvalidValue {
+        Err(_) => Err(DistanceParseError::Value {
             raw_value: raw.to_string(),
         }),
     }
@@ -68,7 +68,7 @@ impl TryFrom<String> for Distance {
 }
 
 #[derive(Debug, PartialEq)]
-enum DistanceUnit {
+pub enum DistanceUnit {
     Meters,
     Centimeters,
     Millimeters,
@@ -84,7 +84,7 @@ impl TryFrom<String> for DistanceUnit {
             "m" => Ok(DistanceUnit::Meters),
             "cm" => Ok(DistanceUnit::Centimeters),
             "mm" => Ok(DistanceUnit::Millimeters),
-            _ => Err(DistanceParseError::InvalidUnit { raw_unit: s }),
+            _ => Err(DistanceParseError::Unit { raw_unit: s }),
         }
     }
 }
@@ -99,7 +99,7 @@ impl DistanceUnit {
         }
     }
 
-    fn value(&self, distance: &Distance) -> f64 {
+    pub(crate) fn value(&self, distance: &Distance) -> f64 {
         distance.value_in_meters * self.conversion_factor()
     }
 
@@ -158,7 +158,7 @@ fn test_distance_try_from() {
 
     let error = Distance::try_from("5 cubits".to_string()).unwrap_err();
     assert_eq!(
-        DistanceParseError::InvalidUnit {
+        DistanceParseError::Unit {
             raw_unit: "cubits".to_string()
         },
         error
@@ -166,7 +166,7 @@ fn test_distance_try_from() {
 
     let error = Distance::try_from("5.5.5 m".to_string()).unwrap_err();
     assert_eq!(
-        DistanceParseError::InvalidValue {
+        DistanceParseError::Value {
             raw_value: "5.5.5".to_string()
         },
         error
@@ -174,7 +174,7 @@ fn test_distance_try_from() {
 
     let error = Distance::try_from("5".to_string()).unwrap_err();
     assert_eq!(
-        DistanceParseError::InvalidFormat {
+        DistanceParseError::Format {
             raw: "5".to_string()
         },
         error
@@ -182,7 +182,7 @@ fn test_distance_try_from() {
 
     let error = Distance::try_from("".to_string()).unwrap_err();
     assert_eq!(
-        DistanceParseError::InvalidFormat {
+        DistanceParseError::Format {
             raw: "".to_string()
         },
         error

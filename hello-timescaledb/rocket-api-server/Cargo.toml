@@ -1,0 +1,16 @@
+[package]
+name = "rocket-api-server"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rocket = { version = "0.5.1", features = ["json"] }
+rocket_db_pools = { version = "0.2", features = ["sqlx_postgres"] }
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres", "macros", "chrono", "uuid"] }
+serde = "1"
+serde_derive = "1"
+serde_json = "1"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "0.8", features = ["serde", "v4"] }
+dotenv = "0.15"
+dotenv_codegen = "0.15"

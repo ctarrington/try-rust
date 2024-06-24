@@ -1,2 +1,2 @@
 [default.databases.sqlx]
-url = "postgres://postgres:egret11@localhost/rocket_api_database"
+url = "postgres://postgres:password@localhost/rocket_api_database"

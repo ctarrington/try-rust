@@ -16,16 +16,17 @@ async fn insert_measurement(
     mut db: Connection<RocketApiDatabase>,
     measurement: Json<Measurement>,
 ) -> Result<Created<Json<Measurement>>, String> {
-    let measured_at: chrono::ParseResult<chrono::NaiveDateTime> = chrono::NaiveDateTime::parse_from_str(&*measurement.measured_at, "%Y-%m-%dT%H:%M:%S.%6f");
+    let object_id_string = measurement.object_id.to_string();
+    let object_uuid = sqlx::types::Uuid::parse_str(&object_id_string);
 
-    if let Err(e) = measured_at {
+    if let Err(e) = object_uuid {
         return Err(e.to_string());
     }
 
-    let measured_at = measured_at.unwrap();
+    let object_uuid = object_uuid.unwrap();
 
     let results = sqlx::query!(
-            "INSERT INTO measurements (measured_at, object_id, latitude, longitude, object_length) VALUES ($1, $2, $3, $4, $5) RETURNING measurement_id", measured_at, measurement.object_id, measurement.latitude, measurement.longitude, measurement.object_length
+            "INSERT INTO measurements (measured_at, object_id, latitude, longitude, object_length) VALUES ($1, $2, $3, $4, $5) RETURNING measurement_id", measurement.measured_at, object_uuid, measurement.latitude, measurement.longitude, measurement.object_length
         )
         .fetch(&mut **db)
         .try_collect::<Vec<_>>()

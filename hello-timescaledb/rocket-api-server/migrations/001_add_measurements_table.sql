@@ -1,8 +1,9 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
 CREATE TABLE "measurements" (
-    measured_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
-    object_id SERIAL,
+    measured_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    measurement_id SERIAL,
+    object_id char(36) NOT NULL,
     latitude REAL NOT NULL,
     longitude REAL NOT NULL,
     object_length REAL NOT NULL

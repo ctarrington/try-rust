@@ -1,2 +1,2 @@
-[default.databases.sqlx]
+[default.databases.rocket_api_database]
 url = "postgres://postgres:password@localhost/rocket_api_database"

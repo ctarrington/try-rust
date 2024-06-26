@@ -41,10 +41,13 @@ the parameters in queries are $1, $2, $3, etc for postgres, not ? like in sqlite
   over time X
 * convert model uuid to sqlx uuid on the way into the database X
 * time stamp as chrono NaiveDateTime in model and then TIMESTAMP in postgres X
+* add a custom error type with anyhow X
 * ---
-* add a custom error type
 * add a sensor id uuid
-* ------------------------------------------------
+
+------------------------------------------------
+
+* multiple binaries in one cargo project? api server, sensor client, reader client?
 * add a client sensor that adds records - rust binary with some config
     * sensor location and range and number of world objects via parameters
     * deterministic object points

@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Measurement {
+    pub measurement_id: Option<i32>,
     pub object_id: uuid::Uuid,
     pub measured_at: NaiveDateTime,
     pub latitude: f32,

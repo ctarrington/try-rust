@@ -16,12 +16,13 @@ async fn insert_measurement(
     mut db: Connection<RocketApiDatabase>,
     mut measurement: Json<Measurement>,
 ) -> Result<Created<Json<Measurement>>, rocket::response::Debug<anyhow::Error>> {
-    let object_id_string = measurement.object_id.to_string();
-    let object_uuid =
-        sqlx::types::Uuid::parse_str(&object_id_string).map_err(|e| anyhow::Error::from(e))?;
+    let object_uuid = sqlx::types::Uuid::parse_str(&measurement.object_uuid.to_string())
+        .map_err(|e| anyhow::Error::from(e))?;
+    let sensor_uuid = sqlx::types::Uuid::parse_str(&measurement.sensor_uuid.to_string())
+        .map_err(|e| anyhow::Error::from(e))?;
 
     let results = sqlx::query!(
-            "INSERT INTO measurements (measured_at, object_id, latitude, longitude, object_length) VALUES ($1, $2, $3, $4, $5) RETURNING measurement_id", measurement.measured_at, object_uuid, measurement.latitude, measurement.longitude, measurement.object_length
+            "INSERT INTO measurements (measured_at, object_uuid, sensor_uuid, latitude, longitude, object_length) VALUES ($1, $2, $3, $4, $5, $6) RETURNING measurement_id", measurement.measured_at, object_uuid, sensor_uuid, measurement.latitude, measurement.longitude, measurement.object_length
         )
         .fetch(&mut **db)
         .try_collect::<Vec<_>>()

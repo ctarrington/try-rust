@@ -42,8 +42,7 @@ the parameters in queries are $1, $2, $3, etc for postgres, not ? like in sqlite
 * convert model uuid to sqlx uuid on the way into the database X
 * time stamp as chrono NaiveDateTime in model and then TIMESTAMP in postgres X
 * add a custom error type with anyhow X
-* ---
-* add a sensor id uuid
+* add a sensor id uuid X
 
 ------------------------------------------------
 
@@ -64,6 +63,8 @@ the parameters in queries are $1, $2, $3, etc for postgres, not ? like in sqlite
 
 # curl commands
 
-curl -X POST http://localhost:8000/api/measurement -H "Content-Type: application/json" -d '{"measured_at":"
-2024-06-24T19:23:33.001234","object_id":"a1a2a3a4b1b2c1c2d1d2d3d4d5d6d7d8", "latitude":33.65,"longitude":23.99,"
-object_length":99.9}'
+Note: get rid of the spaces!
+
+curl -X POST http://localhost:8000/api/measurement -H "Content-Type: application/json"
+-d '{"measured_at":"2024-06-24T19:23:33.001234","object_uuid":"a1a2a3a4b1b2c1c2d1d2d3d4d5d6d7d8",
+"sensor_uuid":"e1a2a3a4b1b2c1c2d1d2d3d4d5d6d7d8", "latitude":33.65,"longitude":23.99,"object_length":99.9}'

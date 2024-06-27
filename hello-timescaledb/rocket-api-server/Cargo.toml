@@ -15,3 +15,4 @@ uuid = { version = "0.8", features = ["serde", "v4"] }
 dotenv = "0.15"
 dotenv_codegen = "0.15"
 anyhow = "1.0.86"
+reqwest = { version = "0.12.5", features = ["json"] }

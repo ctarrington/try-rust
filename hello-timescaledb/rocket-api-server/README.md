@@ -27,7 +27,11 @@ sqlx database reset
 
 ## Run the api server
 
-cargo watch -x 'run --release'
+cargo watch -x 'run --release --bin api_server'
+
+## Run the sensor sim
+
+cargo run --release --bin sensor_sim
 
 ### warning
 

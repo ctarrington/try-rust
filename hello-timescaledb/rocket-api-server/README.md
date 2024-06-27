@@ -55,9 +55,16 @@ the parameters in queries are $1, $2, $3, etc for postgres, not ? like in sqlite
 * add a client reader that reads records based on time - rust binary with some config
 * add a client reader that reads records based on time - web page
 * take some benchmarks
+
 * ------------------------------------------------
 * how to store json ish (protobuf, json, *flatbuffers*) for the sparse and crazy parts of the model
 * add filtering on sparse data and repeat benchmarks
+
+------------------------------------------------
+
+* add an api to subscribe to records based on time via SSE
+* change the client to use SSE
+* take some benchmarks
 * ------------------------------------------------
 * image frame db
 

@@ -27,11 +27,11 @@ sqlx database reset
 
 ## Run the api server
 
-cargo watch -x 'run --release --bin api_server'
+cargo watch -x 'run --release --bin api-server'
 
 ## Run the sensor sim
 
-cargo run --release --bin sensor_sim
+cargo run --release --bin sensor-sim
 
 ### warning
 
@@ -47,8 +47,11 @@ the parameters in queries are $1, $2, $3, etc for postgres, not ? like in sqlite
 * time stamp as chrono NaiveDateTime in model and then TIMESTAMP in postgres X
 * add a custom error type with anyhow X
 * add a sensor id uuid X
-* switch measurement id to be a uuid, either passed or generated
-* add a database populated recorded time stamp
+* switch measurement id to be a generated uuid X
+* add a database populated recorded time stamp X
+* clean up the server return - do we need to return anything?
+* make the sensor sim multi threaded
+* make the sensor sim configurable via cmd line parameters
 
 ------------------------------------------------
 

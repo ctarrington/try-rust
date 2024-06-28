@@ -62,11 +62,12 @@ the parameters in queries are $1, $2, $3, etc for postgres, not ? like in sqlite
     * one sensor id X
     * deterministic object points on each iteration X
     * update the object id on each iteration X
+* minimal error handling in sensor sim
 
 ------------------------------------------------
 
-* add an api endpoint to read records based on time
-* add an api endpoint to read history of a single object
+* add an api endpoint to read all records based on a time range
+* add an api endpoint to read history of a single object within a time range
 * add a client reader that reads records based on time - rust binary with some config
 * add a client reader that reads records based on time - web page
 * take some benchmarks

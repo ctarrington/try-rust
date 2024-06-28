@@ -2,14 +2,26 @@ use clap::Parser;
 use rocket::tokio;
 use rocket_api_server::Measurement;
 
+/// Simulate a sensor sending measurements to the API server
 #[derive(Parser)]
 #[command(version, about, long_about=None)]
 struct Args {
+    /// Number of real world objects to simulate
     #[arg(short, long, default_value_t = 1000)]
     object_count: usize,
 
+    /// Number of measurements to send in parallel
     #[arg(short, long, default_value_t = 5)]
     future_count: usize,
+
+    /// Number of iterations or ticks to simulate
+    /// Each tick sends a measurement for each object
+    #[arg(short, long, default_value_t = 60)]
+    tick_count: usize,
+
+    /// URL of the API server
+    #[arg(short, long, default_value = "http://localhost:8000/api/measurement")]
+    server_url: String,
 }
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -19,7 +31,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = reqwest::Client::new();
 
     let object_count = args.object_count;
-    let tick_count = 60;
+    let tick_count = args.tick_count;
 
     let future_count = args.future_count;
     let loops = object_count * tick_count / future_count;
@@ -49,12 +61,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             };
 
             let client = client.clone();
+            let server_url = args.server_url.clone();
             let future = async move {
-                let _result = client
-                    .post("http://localhost:8000/api/measurement")
-                    .json(&measurement)
-                    .send()
-                    .await;
+                let _result = client.post(server_url).json(&measurement).send().await;
             };
             futures.push(future);
             object_index += 1;

@@ -33,6 +33,8 @@ cargo watch -x 'run --release --bin api-server'
 
 cargo run --release --bin sensor-sim
 
+./target/release/sensor-sim --future-count 4 --object-count 1000
+
 ### warning
 
 the parameters in queries are $1, $2, $3, etc for postgres, not ? like in sqlite!
@@ -49,17 +51,20 @@ the parameters in queries are $1, $2, $3, etc for postgres, not ? like in sqlite
 * add a sensor id uuid X
 * switch measurement id to be a generated uuid X
 * add a database populated recorded time stamp X
-* clean up the server return - do we need to return anything?
-* make the sensor sim multi threaded
-* make the sensor sim configurable via cmd line parameters
+* clean up the server return X
+* make the sensor sim multi threaded X
+* make the sensor sim configurable via cmd line parameters X
 
 ------------------------------------------------
 
 * multiple binaries in one cargo project X
 * add a client sensor that adds records - rust binary with some config
-    * one sensor id
-    * deterministic object points on each iteration
-    * update the object id on each iteration
+    * one sensor id X
+    * deterministic object points on each iteration X
+    * update the object id on each iteration X
+
+------------------------------------------------
+
 * add an api endpoint to read records based on time
 * add an api endpoint to read history of a single object
 * add a client reader that reads records based on time - rust binary with some config

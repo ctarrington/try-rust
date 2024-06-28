@@ -1,15 +1,27 @@
+use clap::Parser;
 use rocket::tokio;
 use rocket_api_server::Measurement;
 
+#[derive(Parser)]
+#[command(version, about, long_about=None)]
+struct Args {
+    #[arg(short, long, default_value_t = 1000)]
+    object_count: usize,
+
+    #[arg(short, long, default_value_t = 5)]
+    future_count: usize,
+}
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args = Args::parse();
+
     let sensor_uuid = uuid::Uuid::new_v4();
     let client = reqwest::Client::new();
 
-    let object_count = 10_000;
+    let object_count = args.object_count;
     let tick_count = 60;
 
-    let future_count = 20;
+    let future_count = args.future_count;
     let loops = object_count * tick_count / future_count;
 
     let mut tick = 0;

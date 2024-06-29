@@ -62,7 +62,6 @@ the parameters in queries are $1, $2, $3, etc for postgres, not ? like in sqlite
     * one sensor id X
     * deterministic object points on each iteration X
     * update the object id on each iteration X
-* minimal error handling in sensor sim
 
 ------------------------------------------------
 
@@ -82,6 +81,10 @@ the parameters in queries are $1, $2, $3, etc for postgres, not ? like in sqlite
 * change the client to use SSE
 * take some benchmarks
 * ------------------------------------------------
+* minimal error handling in sensor sim
+* make the sensor sim wait the balance of 1 second at the end of each tick
+
+* ------------------------------------------------
 * image frame db
 
 # curl commands
@@ -91,3 +94,7 @@ Note: get rid of the spaces!
 curl -X POST http://localhost:8000/api/measurement -H "Content-Type: application/json"
 -d '{"measured_at":"2024-06-24T19:23:33.001234","object_uuid":"a1a2a3a4b1b2c1c2d1d2d3d4d5d6d7d8",
 "sensor_uuid":"e1a2a3a4b1b2c1c2d1d2d3d4d5d6d7d8", "latitude":33.65,"longitude":23.99,"object_length":99.9}'
+
+curl -X GET http://localhost:8000/api/find_for_range?start=2024-06-24T19:23:33.001234&end=2024-06-28T19:23:33.001234
+
+curl -X GET "http://localhost:8000/api/find_measurements?start=2024-06-28T22:01:10&end=2024-06-28T22:01:15" | jq

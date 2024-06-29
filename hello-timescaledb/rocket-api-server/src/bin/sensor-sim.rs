@@ -50,7 +50,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
 
             let measurement = Measurement {
-                measurement_id: None,
+                measurement_uuid: None,
                 recorded_at: None,
                 object_uuid: object_uuids[object_index],
                 sensor_uuid,

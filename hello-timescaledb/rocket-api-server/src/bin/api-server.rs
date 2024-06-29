@@ -49,7 +49,7 @@ async fn find_measurements(
         .map_err(|e| anyhow::Error::from(e))?;
 
     let query_result = sqlx::query!(
-        "SELECT * FROM measurements m WHERE m.measured_at >= $1 AND m.measured_at < $2 ORDER BY m.object_uuid, m.measured_at DESC",
+        "SELECT DISTINCT ON (object_uuid) * FROM measurements m WHERE m.measured_at >= $1 AND m.measured_at < $2 ORDER BY m.object_uuid, m.measured_at DESC",
         start,
         end
     )

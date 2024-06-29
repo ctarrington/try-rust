@@ -79,7 +79,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         if object_index >= object_count {
             object_index = 0;
             tick += 1;
-            println!("Sent measurements for tick {}", tick);
+            println!("Sent objects {} for tick {}", object_count, tick);
             tokio::time::sleep(tokio::time::Duration::from_millis(
                 args.interval_milliseconds as u64,
             ))

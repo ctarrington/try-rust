@@ -69,12 +69,12 @@ the parameters in queries are $1, $2, $3, etc for postgres, not ? like in sqlite
 * add a client reader that reads records based on time - rust binary
     * cmd line option for ago and window duration X
     * print out the latest measured time, uuid, lat and long of each object X
-* add an api option for latest only and a client option for latest only
+* api should only return the latest record for each object X
 * take some benchmarks
 
 ------------------------------------------------
 
-* add an api endpoint to read history of a single object within a time range
+* add an api endpoint to read path history of a single object within a time range
 * add a details query to the client reader
     * print out the history for a single object
 * take some benchmarks

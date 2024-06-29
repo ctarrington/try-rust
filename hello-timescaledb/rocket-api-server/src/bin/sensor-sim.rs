@@ -16,8 +16,13 @@ struct Args {
 
     /// Number of iterations or ticks to simulate
     /// Each tick sends a measurement for each object
-    #[arg(short, long, default_value_t = 60)]
+    /// zero means forever
+    #[arg(short, long, default_value_t = 0)]
     tick_count: usize,
+
+    /// Interval between ticks in milliseconds
+    #[arg(short, long, default_value_t = 1000)]
+    interval_milliseconds: usize,
 
     /// URL of the API server
     #[arg(short, long, default_value = "http://localhost:8000/api/measurement")]
@@ -34,7 +39,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let tick_count = args.tick_count;
 
     let future_count = args.future_count;
-    let loops = object_count * tick_count / future_count;
 
     let mut tick = 0;
     let mut object_index = 0;
@@ -42,7 +46,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let object_uuids: Vec<uuid::Uuid> = (0..object_count).map(|_| uuid::Uuid::new_v4()).collect();
 
-    for _outer_index in 0..loops {
+    while tick < tick_count || tick_count == 0 {
         let mut futures = Vec::new();
         for _index in 0..future_count {
             if object_index >= object_count {
@@ -76,6 +80,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             object_index = 0;
             tick += 1;
             println!("Sent measurements for tick {}", tick);
+            tokio::time::sleep(tokio::time::Duration::from_millis(
+                args.interval_milliseconds as u64,
+            ))
+            .await;
         }
     }
 

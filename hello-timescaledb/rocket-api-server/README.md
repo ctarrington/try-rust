@@ -65,10 +65,18 @@ the parameters in queries are $1, $2, $3, etc for postgres, not ? like in sqlite
 
 ------------------------------------------------
 
-* add an api endpoint to read all records based on a time range
+* add an api endpoint to read all records based on a time range X
+* add a client reader that reads records based on time - rust binary
+    * cmd line option for ago and window duration X
+    * print out the latest measured time, uuid, lat and long of each object X
+* add an api option for latest only and a client option for latest only
+* take some benchmarks
+
+------------------------------------------------
+
 * add an api endpoint to read history of a single object within a time range
-* add a client reader that reads records based on time - rust binary with some config
-* add a client reader that reads records based on time - web page
+* add a details query to the client reader
+    * print out the history for a single object
 * take some benchmarks
 
 * ------------------------------------------------
@@ -95,6 +103,5 @@ curl -X POST http://localhost:8000/api/measurement -H "Content-Type: application
 -d '{"measured_at":"2024-06-24T19:23:33.001234","object_uuid":"a1a2a3a4b1b2c1c2d1d2d3d4d5d6d7d8",
 "sensor_uuid":"e1a2a3a4b1b2c1c2d1d2d3d4d5d6d7d8", "latitude":33.65,"longitude":23.99,"object_length":99.9}'
 
-curl -X GET http://localhost:8000/api/find_for_range?start=2024-06-24T19:23:33.001234&end=2024-06-28T19:23:33.001234
-
-curl -X GET "http://localhost:8000/api/find_measurements?start=2024-06-28T22:01:10&end=2024-06-28T22:01:15" | jq
+curl -X GET "http://localhost:8000/api/find_measurements?start=2024-06-28T22:01:10&end=2024-06-29T22:01:15" | jq . |
+vim -

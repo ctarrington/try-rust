@@ -1,6 +1,6 @@
 use clap::Parser;
 use rocket::tokio;
-use rocket_api_server::Measurement;
+use rocket_api_server::{Measurement, Path};
 
 /// Simulate a client getting measurements from the API server
 #[derive(Parser)]
@@ -24,6 +24,10 @@ struct Args {
     /// 0 means forever
     #[arg(short, long, default_value_t = 0)]
     iterations: usize,
+
+    /// number of objects to fetch path for
+    #[arg(short, long, default_value_t = 1)]
+    path_count: usize,
 
     /// URL of the API server
     #[arg(
@@ -70,6 +74,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             iteration_count += 1;
         }
 
+        let max_path_index = std::cmp::min(args.path_count, measurements.len());
+
+        // get a path for the first path_count objects
+        for path_index in 0..max_path_index {
+            let url = format!(
+                "http://localhost:8000/api/get_path?object_uuid={}&start={}&end={}",
+                measurements[path_index].object_uuid,
+                start.format("%Y-%m-%dT%H:%M:%S"),
+                end.format("%Y-%m-%dT%H:%M:%S")
+            );
+            let response = client.get(&url).send().await?;
+            let path: Path = response.json().await?;
+
+            println!("Got path for object {}", path.object_uuid);
+            println!("{}", serde_json::to_string_pretty(&path).unwrap());
+        }
+
+        // take a break
+        // todo: make this the balance of the interval
         tokio::time::sleep(tokio::time::Duration::from_millis(
             args.interval_milliseconds as u64,
         ))

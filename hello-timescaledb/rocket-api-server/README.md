@@ -35,6 +35,10 @@ cargo run --release --bin sensor-sim
 
 ./target/release/sensor-sim --future-count 4 --object-count 1000
 
+## Run the client sim
+
+./target/release/client-sim --window-minutes 1
+
 ### warning
 
 the parameters in queries are $1, $2, $3, etc for postgres, not ? like in sqlite!
@@ -70,14 +74,38 @@ the parameters in queries are $1, $2, $3, etc for postgres, not ? like in sqlite
     * cmd line option for ago and window duration X
     * print out the latest measured time, uuid, lat and long of each object X
 * api should only return the latest record for each object X
-* take some benchmarks
 
 ------------------------------------------------
 
-* add an api endpoint to read path history of a single object within a time range
-* add a details query to the client reader
-    * print out the history for a single object
+* add an api endpoint to read path history of a single object within a time range X
+* add a details query to the client reader X
+    * print out the history for a single object X
+
+------------------------------------------------
+
+* clean up server
+    * split out methods
+    * add unit tests?
+* clean up client
+* TryFrom for uuid?
+
+------------------------------------------------
+
+* add a diagnostics endpoint to the api
+    * the number of records in the database
+    * the number of objects in the database
+    * size of the database
+* create a client for the diagnostics endpoint
+
+------------------------------------------------
+
+* split each route into its own file?
+* test error handling
+
+------------------------------------------------
+
 * take some benchmarks
+* make sure the diagnostics don't mess things up
 
 * ------------------------------------------------
 * how to store json ish (protobuf, json, *flatbuffers*) for the sparse and crazy parts of the model
@@ -105,3 +133,7 @@ curl -X POST http://localhost:8000/api/measurement -H "Content-Type: application
 
 curl -X GET "http://localhost:8000/api/find_measurements?start=2024-06-28T22:01:10&end=2024-06-29T22:01:15" | jq . |
 vim -
+
+curl -X
+GET "http://localhost:8000/api/get_path?start=2024-06-29T01:01:01&end=2024-06-29T23:59:59&object_uuid=fff458c2-424c-42f4-96f8-ed4ac2e124f1" |
+jq .

@@ -29,6 +29,11 @@ sqlx database reset
 
 cargo watch -x 'run --release --bin api-server'
 
+## Build the client sim and sensor sim
+
+cargo watch -x 'build --release --bin sensor-sim'
+cargo watch -x 'build --release --bin client-sim'
+
 ## Run the sensor sim
 
 cargo run --release --bin sensor-sim
@@ -83,23 +88,24 @@ the parameters in queries are $1, $2, $3, etc for postgres, not ? like in sqlite
 
 ------------------------------------------------
 
-* clean up server
-    * split out methods
-    * add unit tests?
-* clean up client
-* TryFrom for uuid?
-
-------------------------------------------------
-
 * add a diagnostics endpoint to the api
     * the number of records in the database
     * the number of objects in the database
     * size of the database
 * create a client for the diagnostics endpoint
+* show diagnostics in the server?
+    * interval cmd line option for the diagnostics
 
 ------------------------------------------------
 
-* split each route into its own file?
+* clean up server
+    * split each route into its own file X
+* clean up client
+* better way to handle uuid conversions
+* better way to handle time conversions
+
+------------------------------------------------
+
 * test error handling
 
 ------------------------------------------------

@@ -97,9 +97,12 @@ the parameters in queries are $1, $2, $3, etc for postgres, not ? like in sqlite
 
 * clean up server
     * split each route into its own file X
-* clean up client
-* better way to handle uuid conversions
-* better way to handle time conversions
+    * better way to handle uuid conversions
+    * better way to handle time conversions
+    * comments
+* clean up clients
+* add some variation to the sensor sim
+    * drop an object sometimes
 
 ------------------------------------------------
 
@@ -108,7 +111,7 @@ the parameters in queries are $1, $2, $3, etc for postgres, not ? like in sqlite
 ------------------------------------------------
 
 * take some benchmarks
-* make sure the diagnostics don't mess things up
+    *
 
 * ------------------------------------------------
 * how to store json ish (protobuf, json, *flatbuffers*) for the sparse and crazy parts of the model

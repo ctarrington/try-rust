@@ -17,6 +17,8 @@ pub async fn find_measurements(
     let end = chrono::NaiveDateTime::parse_from_str(&end, "%Y-%m-%dT%H:%M:%S")
         .map_err(|e| anyhow::Error::from(e))?;
 
+    // Distinct on object_uuid and order by measured_at descending combine to give the most recent
+    // measurement for each object
     let query_result = sqlx::query!(
         "SELECT DISTINCT ON (object_uuid) * FROM measurements m WHERE m.measured_at >= $1 AND m.measured_at < $2 ORDER BY m.object_uuid, m.measured_at DESC",
         start,

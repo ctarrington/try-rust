@@ -11,7 +11,6 @@ pub async fn find_measurements(
     start: &str,
     end: &str,
 ) -> Result<Json<Vec<Measurement>>, rocket::response::Debug<anyhow::Error>> {
-    dbg!(start, end);
     let start = chrono::NaiveDateTime::parse_from_str(&start, "%Y-%m-%dT%H:%M:%S")
         .map_err(|e| anyhow::Error::from(e))?;
 

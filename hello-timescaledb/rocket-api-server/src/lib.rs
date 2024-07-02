@@ -29,3 +29,12 @@ pub struct Path {
     pub object_uuid: uuid::Uuid,
     pub path_points: Vec<PathPoint>,
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Diagnostics {
+    pub measured_at: NaiveDateTime,
+    pub measurement_count: usize,
+    pub object_count: usize,
+    pub database_size_gigabytes: f64,
+    pub average_measurement_size_bytes: f64,
+}

@@ -15,7 +15,7 @@ pub async fn insert_measurement(
     let sensor_uuid = sqlx::types::Uuid::parse_str(&measurement.sensor_uuid.to_string())
         .map_err(|e| anyhow::Error::from(e))?;
 
-    let measurement_uuid: sqlx::types::Uuid = sqlx::query!(
+    sqlx::query!(
             "INSERT INTO measurements (measured_at, object_uuid, sensor_uuid, latitude, longitude, object_length) VALUES ($1, $2, $3, $4, $5, $6) RETURNING measurement_uuid, recorded_at", measurement.measured_at, object_uuid, sensor_uuid, measurement.latitude, measurement.longitude, measurement.object_length
         )
         .fetch(&mut **db)
@@ -25,6 +25,5 @@ pub async fn insert_measurement(
         .expect("returning result is empty")
         .measurement_uuid;
 
-    println!("Inserted measurement with id: {}", measurement_uuid);
     Ok(())
 }

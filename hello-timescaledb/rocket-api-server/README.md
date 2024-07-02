@@ -89,12 +89,9 @@ the parameters in queries are $1, $2, $3, etc for postgres, not ? like in sqlite
 ------------------------------------------------
 
 * add a diagnostics endpoint to the api
-    * the number of records in the database
-    * the number of objects in the database
-    * size of the database
-* create a client for the diagnostics endpoint
-* show diagnostics in the server?
-    * interval cmd line option for the diagnostics
+    * the number of records in the database X
+    * the number of objects in the database X
+    * size of the database X
 
 ------------------------------------------------
 
@@ -143,3 +140,5 @@ vim -
 curl -X
 GET "http://localhost:8000/api/get_path?start=2024-06-29T01:01:01&end=2024-06-29T23:59:59&object_uuid=fff458c2-424c-42f4-96f8-ed4ac2e124f1" |
 jq .
+
+curl -X GET "http://localhost:8000/api/get_diagnostics" | jq .

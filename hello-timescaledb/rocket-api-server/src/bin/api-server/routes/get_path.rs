@@ -12,7 +12,6 @@ pub async fn get_path(
     start: &str,
     end: &str,
 ) -> Result<Json<Path>, rocket::response::Debug<anyhow::Error>> {
-    dbg!(object_uuid, start, end);
     let sqlx_object_uuid =
         sqlx::types::Uuid::parse_str(object_uuid).map_err(|e| anyhow::Error::from(e))?;
 

@@ -1,9 +1,8 @@
 use crate::RocketApiDatabase;
 use rocket::get;
 use rocket::serde::json::Json;
-use rocket_api_server::Measurement;
+use rocket_api_server::{convert_to_uuid, parse_datetime, Measurement};
 use rocket_db_pools::Connection;
-use uuid::Uuid;
 
 #[get("/find_measurements?<start>&<end>")]
 pub async fn find_measurements(
@@ -11,11 +10,8 @@ pub async fn find_measurements(
     start: &str,
     end: &str,
 ) -> Result<Json<Vec<Measurement>>, rocket::response::Debug<anyhow::Error>> {
-    let start = chrono::NaiveDateTime::parse_from_str(&start, "%Y-%m-%dT%H:%M:%S")
-        .map_err(|e| anyhow::Error::from(e))?;
-
-    let end = chrono::NaiveDateTime::parse_from_str(&end, "%Y-%m-%dT%H:%M:%S")
-        .map_err(|e| anyhow::Error::from(e))?;
+    let start = parse_datetime(&start).map_err(|e| anyhow::Error::from(e))?;
+    let end = parse_datetime(&end).map_err(|e| anyhow::Error::from(e))?;
 
     // Distinct on object_uuid and order by measured_at descending combine to give the most recent
     // measurement for each object
@@ -30,14 +26,14 @@ pub async fn find_measurements(
 
     let mut measurements: Vec<Measurement> = vec![];
     for (_record_id, record) in query_result.iter().enumerate() {
-        let measurement_uuid = Uuid::parse_str(record.measurement_uuid.to_string().as_str())
-            .map_err(|e| anyhow::Error::from(e))?;
+        let measurement_uuid =
+            convert_to_uuid(&record.measurement_uuid).map_err(|e| anyhow::Error::from(e))?;
 
-        let sensor_uuid = Uuid::parse_str(record.sensor_uuid.to_string().as_str())
-            .map_err(|e| anyhow::Error::from(e))?;
+        let sensor_uuid =
+            convert_to_uuid(&record.sensor_uuid).map_err(|e| anyhow::Error::from(e))?;
 
-        let object_uuid = Uuid::parse_str(record.object_uuid.to_string().as_str())
-            .map_err(|e| anyhow::Error::from(e))?;
+        let object_uuid =
+            convert_to_uuid(&record.object_uuid).map_err(|e| anyhow::Error::from(e))?;
 
         measurements.push(Measurement {
             measurement_uuid: Some(measurement_uuid),

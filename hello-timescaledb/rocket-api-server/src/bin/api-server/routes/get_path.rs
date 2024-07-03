@@ -1,7 +1,7 @@
 use crate::RocketApiDatabase;
 use rocket::get;
 use rocket::serde::json::Json;
-use rocket_api_server::{Path, PathPoint};
+use rocket_api_server::{convert_to_uuid, parse_datetime, Path, PathPoint};
 use rocket_db_pools::Connection;
 use uuid::Uuid;
 
@@ -16,12 +16,8 @@ pub async fn get_path(
         sqlx::types::Uuid::parse_str(object_uuid).map_err(|e| anyhow::Error::from(e))?;
 
     let object_uuid = Uuid::parse_str(object_uuid).map_err(|e| anyhow::Error::from(e))?;
-
-    let start = chrono::NaiveDateTime::parse_from_str(&start, "%Y-%m-%dT%H:%M:%S")
-        .map_err(|e| anyhow::Error::from(e))?;
-
-    let end = chrono::NaiveDateTime::parse_from_str(&end, "%Y-%m-%dT%H:%M:%S")
-        .map_err(|e| anyhow::Error::from(e))?;
+    let start = parse_datetime(&start).map_err(|e| anyhow::Error::from(e))?;
+    let end = parse_datetime(&end).map_err(|e| anyhow::Error::from(e))?;
 
     let query_result = sqlx::query!(
         "SELECT * FROM measurements m WHERE m.object_uuid = $1 AND m.measured_at >= $2 AND m.measured_at < $3 ORDER BY m.measured_at",
@@ -35,8 +31,8 @@ pub async fn get_path(
 
     let mut path_points: Vec<PathPoint> = vec![];
     for (_record_id, record) in query_result.iter().enumerate() {
-        let sensor_uuid = Uuid::parse_str(record.sensor_uuid.to_string().as_str())
-            .map_err(|e| anyhow::Error::from(e))?;
+        let sensor_uuid =
+            convert_to_uuid(&record.sensor_uuid).map_err(|e| anyhow::Error::from(e))?;
 
         path_points.push(PathPoint {
             sensor_uuid,

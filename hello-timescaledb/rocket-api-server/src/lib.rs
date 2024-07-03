@@ -1,4 +1,4 @@
-use chrono::NaiveDateTime;
+use chrono::{NaiveDateTime, ParseResult};
 use serde::{Deserialize, Serialize};
 
 /// Measurement is a single measurement of an object by a Sensor at a time
@@ -37,4 +37,18 @@ pub struct Diagnostics {
     pub object_count: usize,
     pub database_size_gigabytes: f64,
     pub average_measurement_size_bytes: f64,
+}
+
+pub fn parse_datetime(datetime_str: &&str) -> ParseResult<NaiveDateTime> {
+    chrono::NaiveDateTime::parse_from_str(&datetime_str, "%Y-%m-%dT%H:%M:%S")
+}
+
+pub fn convert_to_sqlx_uuid(
+    uuid: &uuid::Uuid,
+) -> Result<sqlx::types::Uuid, sqlx::types::uuid::Error> {
+    sqlx::types::Uuid::parse_str(&uuid.to_string())
+}
+
+pub fn convert_to_uuid(uuid: &sqlx::types::Uuid) -> Result<uuid::Uuid, uuid::Error> {
+    uuid::Uuid::parse_str(&uuid.to_string())
 }

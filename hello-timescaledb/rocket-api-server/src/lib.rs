@@ -39,8 +39,10 @@ pub struct Diagnostics {
     pub average_measurement_size_bytes: f64,
 }
 
+pub const TIME_FORMAT: &str = "%Y-%m-%dT%H:%M:%S";
+
 pub fn parse_datetime(datetime_str: &&str) -> ParseResult<NaiveDateTime> {
-    chrono::NaiveDateTime::parse_from_str(&datetime_str, "%Y-%m-%dT%H:%M:%S")
+    chrono::NaiveDateTime::parse_from_str(&datetime_str, TIME_FORMAT)
 }
 
 pub fn convert_to_sqlx_uuid(

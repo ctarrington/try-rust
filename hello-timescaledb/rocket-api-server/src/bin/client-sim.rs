@@ -1,6 +1,6 @@
 use clap::Parser;
 use rocket::tokio;
-use rocket_api_server::{Measurement, Path};
+use rocket_api_server::{Measurement, Path, TIME_FORMAT};
 
 /// Simulate a client getting measurements from the API server
 #[derive(Parser)]
@@ -44,30 +44,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
     let client = reqwest::Client::new();
-
     let mut iteration_count = 0;
 
     while args.iterations == 0 || iteration_count < args.iterations {
-        let start = chrono::Utc::now().naive_utc()
-            - chrono::Duration::minutes(args.ago_minutes as i64)
-            - chrono::Duration::minutes(args.window_minutes as i64);
+        let loop_start = chrono::Utc::now().naive_utc();
+
         let end =
             chrono::Utc::now().naive_utc() - chrono::Duration::minutes(args.ago_minutes as i64);
+        let start = end - chrono::Duration::minutes(args.window_minutes as i64);
 
         let url = format!(
             "{}?start={}&end={}",
             args.server_url,
-            start.format("%Y-%m-%dT%H:%M:%S"),
-            end.format("%Y-%m-%dT%H:%M:%S")
+            start.format(TIME_FORMAT),
+            end.format(TIME_FORMAT),
         );
-
-        println!("Getting measurements from {}", url);
 
         let response = client.get(&url).send().await?;
         let measurements: Vec<Measurement> = response.json().await?;
 
-        println!("Got {} measurements", measurements.len());
-
+        println!("URL: {}", url);
         println!("{}", serde_json::to_string_pretty(&measurements).unwrap());
 
         if args.iterations != 0 {
@@ -92,9 +88,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         // take a break
-        // todo: make this the balance of the interval
+        let loop_end = chrono::Utc::now().naive_utc();
+        let elapsed = loop_end - loop_start;
+        let sleep_time =
+            chrono::Duration::milliseconds(args.interval_milliseconds as i64) - elapsed;
         tokio::time::sleep(tokio::time::Duration::from_millis(
-            args.interval_milliseconds as u64,
+            sleep_time.num_milliseconds() as u64,
         ))
         .await;
     }

@@ -21,6 +21,8 @@ struct Args {
     tick_count: usize,
 
     /// Interval between ticks in milliseconds
+    /// It is not adjusted for the time it takes to build and
+    /// send the measurements
     #[arg(short, long, default_value_t = 1000)]
     interval_milliseconds: usize,
 
@@ -30,23 +32,23 @@ struct Args {
 }
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let args = Args::parse();
-
     let sensor_uuid = uuid::Uuid::new_v4();
     let client = reqwest::Client::new();
 
+    let args = Args::parse();
     let object_count = args.object_count;
     let tick_count = args.tick_count;
-
     let future_count = args.future_count;
 
     let mut tick = 0;
     let mut object_index = 0;
-    let mut total = 0;
 
     let object_uuids: Vec<uuid::Uuid> = (0..object_count).map(|_| uuid::Uuid::new_v4()).collect();
 
+    // The main loop is a little tricky because we want to send a batches of measurements on the futures
+    // until we get through all the objects.  Then we sleep for the interval and reset the object index.
     while tick < tick_count || tick_count == 0 {
+        // send a batch of measurements using the specified number of futures
         let mut futures = Vec::new();
         for _index in 0..future_count {
             if object_index >= object_count {
@@ -71,15 +73,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             };
             futures.push(future);
             object_index += 1;
-            total += 1;
         }
 
         futures::future::join_all(futures).await;
 
+        // If we have sent all the objects, sleep for the interval
+        // and reset the object index.
         if object_index >= object_count {
             object_index = 0;
             tick += 1;
-            println!("Sent objects {} for tick {}", object_count, tick);
+            println!("Sent {} objects for tick {}", object_count, tick);
             tokio::time::sleep(tokio::time::Duration::from_millis(
                 args.interval_milliseconds as u64,
             ))
@@ -87,9 +90,5 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    println!(
-        "Finished sending {} measurements with {} futures",
-        total, future_count
-    );
     Ok(())
 }

@@ -97,10 +97,9 @@ the parameters in queries are $1, $2, $3, etc for postgres, not ? like in sqlite
 
 * clean up server
     * split each route into its own file X
-    * better way to handle uuid conversions
-    * better way to handle time conversions
-    * comments
-* clean up clients
+    * better way to handle uuid conversions X
+    * better way to handle time conversions X
+* clean up clients X
 * add some variation to the sensor sim
     * drop an object sometimes
 

@@ -15,7 +15,7 @@ pub async fn find_measurements(
 
     // Distinct on object_uuid and order by measured_at descending combine to give the most recent
     // measurement for each object
-    let query_result = sqlx::query!(
+    let query_results = sqlx::query!(
         "SELECT DISTINCT ON (object_uuid) * FROM measurements m WHERE m.measured_at >= $1 AND m.measured_at < $2 ORDER BY m.object_uuid, m.measured_at DESC",
         start,
         end
@@ -25,7 +25,7 @@ pub async fn find_measurements(
         .map_err(|e| rocket::response::Debug(anyhow::Error::from(e)))?;
 
     let mut measurements: Vec<Measurement> = vec![];
-    for (_record_id, record) in query_result.iter().enumerate() {
+    for record in query_results {
         let measurement_uuid =
             convert_to_uuid(&record.measurement_uuid).map_err(|e| anyhow::Error::from(e))?;
 

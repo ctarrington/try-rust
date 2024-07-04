@@ -19,7 +19,7 @@ pub async fn get_path(
     let start = parse_datetime(&start).map_err(|e| anyhow::Error::from(e))?;
     let end = parse_datetime(&end).map_err(|e| anyhow::Error::from(e))?;
 
-    let query_result = sqlx::query!(
+    let query_results = sqlx::query!(
         "SELECT * FROM measurements m WHERE m.object_uuid = $1 AND m.measured_at >= $2 AND m.measured_at < $3 ORDER BY m.measured_at",
         sqlx_object_uuid,
         start,
@@ -30,7 +30,7 @@ pub async fn get_path(
         .map_err(|e| rocket::response::Debug(anyhow::Error::from(e)))?;
 
     let mut path_points: Vec<PathPoint> = vec![];
-    for (_record_id, record) in query_result.iter().enumerate() {
+    for record in query_results {
         let sensor_uuid =
             convert_to_uuid(&record.sensor_uuid).map_err(|e| anyhow::Error::from(e))?;
 

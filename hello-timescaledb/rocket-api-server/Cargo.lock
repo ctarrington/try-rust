@@ -1851,6 +1851,7 @@ dependencies = [
  "dotenv",
  "dotenv_codegen",
  "futures",
+ "rand",
  "reqwest",
  "rocket",
  "rocket_db_pools",

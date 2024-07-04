@@ -101,7 +101,7 @@ the parameters in queries are $1, $2, $3, etc for postgres, not ? like in sqlite
     * better way to handle time conversions X
 * clean up clients X
 * add some variation to the sensor sim
-    * drop an object sometimes
+    * drop an object sometimes X
 
 ------------------------------------------------
 

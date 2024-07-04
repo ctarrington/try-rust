@@ -105,7 +105,8 @@ the parameters in queries are $1, $2, $3, etc for postgres, not ? like in sqlite
 
 ------------------------------------------------
 
-* test error handling
+* test error handling for clients X
+* test error handling for server
 
 ------------------------------------------------
 

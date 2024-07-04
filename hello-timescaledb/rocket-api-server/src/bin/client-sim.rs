@@ -60,10 +60,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             end.format(TIME_FORMAT),
         );
 
-        let response = client.get(&url).send().await?;
-        let measurements: Vec<Measurement> = response.json().await?;
+        let result = client.get(&url).send().await;
 
         println!("URL: {}", url);
+        if let Err(err) = result {
+            println!("Error: {}", err);
+            continue;
+        }
+
+        let response = result.unwrap();
+        let measurements: Vec<Measurement> = response.json().await?;
         println!("{}", serde_json::to_string_pretty(&measurements).unwrap());
 
         if args.iterations != 0 {

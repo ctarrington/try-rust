@@ -1,6 +1,16 @@
+use std::ops::Deref;
+
 #[derive(Debug)]
 pub struct Holder {
     pub value: i32,
+}
+
+impl Deref for Holder {
+    type Target = i32;
+
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
 }
 
 #[test]
@@ -8,6 +18,12 @@ fn test_holder() {
     let holder = Holder { value: 42 };
     assert_eq!(42, holder.value);
     println!("{:?}", holder);
+}
+
+#[test]
+fn test_deref_holder() {
+    let holder = Holder { value: 42 };
+    assert_eq!(42, *holder);
 }
 
 #[test]

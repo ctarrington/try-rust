@@ -70,7 +70,7 @@ pub struct Diagnostics {
 pub const TIME_FORMAT: &str = "%Y-%m-%dT%H:%M:%S";
 
 pub fn parse_datetime(datetime_str: &&str) -> ParseResult<NaiveDateTime> {
-    chrono::NaiveDateTime::parse_from_str(&datetime_str, TIME_FORMAT)
+    chrono::NaiveDateTime::parse_from_str(datetime_str, TIME_FORMAT)
 }
 
 pub fn convert_to_sqlx_uuid(

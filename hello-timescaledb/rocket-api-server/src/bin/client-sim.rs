@@ -86,10 +86,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let max_path_index = std::cmp::min(args.path_count, measurements.len());
 
         // get a path for the first path_count objects
-        for path_index in 0..max_path_index {
+        for measurement in measurements.iter().take(max_path_index) {
             let url = format!(
                 "http://localhost:8000/api/get_path?object_uuid={}&start={}&end={}",
-                measurements[path_index].object_uuid,
+                measurement.object_uuid,
                 start.format("%Y-%m-%dT%H:%M:%S"),
                 end.format("%Y-%m-%dT%H:%M:%S")
             );

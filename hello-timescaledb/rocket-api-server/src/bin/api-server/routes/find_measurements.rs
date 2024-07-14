@@ -12,8 +12,8 @@ pub async fn find_measurements(
     start: &str,
     end: &str,
 ) -> Result<Json<InstrumentedResponse<Vec<Measurement>>>, rocket::response::Debug<anyhow::Error>> {
-    let start = parse_datetime(&start).map_err(|e| anyhow::Error::from(e))?;
-    let end = parse_datetime(&end).map_err(|e| anyhow::Error::from(e))?;
+    let start = parse_datetime(&start).map_err(anyhow::Error::from)?;
+    let end = parse_datetime(&end).map_err(anyhow::Error::from)?;
 
     let query_start = chrono::Utc::now().naive_utc();
     // Distinct on object_uuid and order by measured_at descending combine to give the most recent
@@ -31,13 +31,13 @@ pub async fn find_measurements(
     let mut measurements: Vec<Measurement> = vec![];
     for record in query_results {
         let measurement_uuid =
-            convert_to_uuid(&record.measurement_uuid).map_err(|e| anyhow::Error::from(e))?;
+            convert_to_uuid(&record.measurement_uuid).map_err(anyhow::Error::from)?;
 
         let sensor_uuid =
-            convert_to_uuid(&record.sensor_uuid).map_err(|e| anyhow::Error::from(e))?;
+            convert_to_uuid(&record.sensor_uuid).map_err(anyhow::Error::from)?;
 
         let object_uuid =
-            convert_to_uuid(&record.object_uuid).map_err(|e| anyhow::Error::from(e))?;
+            convert_to_uuid(&record.object_uuid).map_err(anyhow::Error::from)?;
 
         measurements.push(Measurement {
             measurement_uuid: Some(measurement_uuid),

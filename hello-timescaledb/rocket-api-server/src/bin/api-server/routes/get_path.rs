@@ -13,11 +13,11 @@ pub async fn get_path(
     end: &str,
 ) -> Result<Json<Path>, rocket::response::Debug<anyhow::Error>> {
     let sqlx_object_uuid =
-        sqlx::types::Uuid::parse_str(object_uuid).map_err(|e| anyhow::Error::from(e))?;
+        sqlx::types::Uuid::parse_str(object_uuid).map_err(anyhow::Error::from)?;
 
-    let object_uuid = Uuid::parse_str(object_uuid).map_err(|e| anyhow::Error::from(e))?;
-    let start = parse_datetime(&start).map_err(|e| anyhow::Error::from(e))?;
-    let end = parse_datetime(&end).map_err(|e| anyhow::Error::from(e))?;
+    let object_uuid = Uuid::parse_str(object_uuid).map_err(anyhow::Error::from)?;
+    let start = parse_datetime(&start).map_err(anyhow::Error::from)?;
+    let end = parse_datetime(&end).map_err(anyhow::Error::from)?;
 
     let query_results = sqlx::query!(
         "SELECT * FROM measurements m WHERE m.object_uuid = $1 AND m.measured_at >= $2 AND m.measured_at < $3 ORDER BY m.measured_at",
@@ -32,7 +32,7 @@ pub async fn get_path(
     let mut path_points: Vec<PathPoint> = vec![];
     for record in query_results {
         let sensor_uuid =
-            convert_to_uuid(&record.sensor_uuid).map_err(|e| anyhow::Error::from(e))?;
+            convert_to_uuid(&record.sensor_uuid).map_err(anyhow::Error::from)?;
 
         path_points.push(PathPoint {
             sensor_uuid,

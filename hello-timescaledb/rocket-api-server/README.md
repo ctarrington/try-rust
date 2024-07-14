@@ -112,9 +112,10 @@ the parameters in queries are $1, $2, $3, etc for postgres, not ? like in sqlite
 
 * add instrumentation to responses
     * times X
-    * display with elapsed
+    * display with elapsed X
 * add pagination
 * add sort order
+* add timing to more spots: path,...
 
 ------------------------------------------------
 

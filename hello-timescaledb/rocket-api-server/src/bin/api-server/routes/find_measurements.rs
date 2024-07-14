@@ -6,11 +6,13 @@ use rocket_api_server::{
 };
 use rocket_db_pools::Connection;
 
-#[get("/find_measurements?<start>&<end>")]
+#[get("/find_measurements?<start>&<end>&<page_index>&<page_size>")]
 pub async fn find_measurements(
     mut db: Connection<RocketApiDatabase>,
     start: &str,
     end: &str,
+    page_index: i64,
+    page_size: i64,
 ) -> Result<Json<InstrumentedResponse<Vec<Measurement>>>, rocket::response::Debug<anyhow::Error>> {
     let start = parse_datetime(&start).map_err(anyhow::Error::from)?;
     let end = parse_datetime(&end).map_err(anyhow::Error::from)?;
@@ -19,9 +21,11 @@ pub async fn find_measurements(
     // Distinct on object_uuid and order by measured_at descending combine to give the most recent
     // measurement for each object
     let query_results = sqlx::query!(
-        "SELECT DISTINCT ON (object_uuid) * FROM measurements m WHERE m.measured_at >= $1 AND m.measured_at < $2 ORDER BY m.object_uuid, m.measured_at DESC",
+        "SELECT DISTINCT ON (object_uuid) * FROM measurements m WHERE m.measured_at >= $1 AND m.measured_at < $2 ORDER BY m.object_uuid, m.measured_at DESC LIMIT $3 OFFSET $4",
         start,
-        end
+        end,
+        page_size,
+        page_index * page_size,
     )
         .fetch_all(&mut **db)
         .await
@@ -33,11 +37,9 @@ pub async fn find_measurements(
         let measurement_uuid =
             convert_to_uuid(&record.measurement_uuid).map_err(anyhow::Error::from)?;
 
-        let sensor_uuid =
-            convert_to_uuid(&record.sensor_uuid).map_err(anyhow::Error::from)?;
+        let sensor_uuid = convert_to_uuid(&record.sensor_uuid).map_err(anyhow::Error::from)?;
 
-        let object_uuid =
-            convert_to_uuid(&record.object_uuid).map_err(anyhow::Error::from)?;
+        let object_uuid = convert_to_uuid(&record.object_uuid).map_err(anyhow::Error::from)?;
 
         measurements.push(Measurement {
             measurement_uuid: Some(measurement_uuid),

@@ -1,4 +1,6 @@
 use clap::Parser;
+use rand::distributions::Uniform;
+use rand::Rng;
 use rocket::tokio;
 use rocket_api_server::{Measurement, Path, Times, TIME_FORMAT};
 
@@ -41,6 +43,8 @@ struct Args {
 //noinspection ALL
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mut rng = rand::thread_rng();
+    let page_index_range = Uniform::new(0, 100);
     let args = Args::parse();
 
     let client = reqwest::Client::new();
@@ -52,12 +56,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let end =
             chrono::Utc::now().naive_utc() - chrono::Duration::minutes(args.ago_minutes as i64);
         let start = end - chrono::Duration::minutes(args.window_minutes as i64);
+        let page_index = rng.sample(page_index_range);
 
         let url = format!(
-            "{}?start={}&end={}",
+            "{}?start={}&end={}&page_index={}&page_size=100",
             args.server_url,
             start.format(TIME_FORMAT),
             end.format(TIME_FORMAT),
+            page_index,
         );
 
         let request_sent_at = chrono::Utc::now().naive_utc();

@@ -113,8 +113,8 @@ the parameters in queries are $1, $2, $3, etc for postgres, not ? like in sqlite
 * add instrumentation to responses
     * times X
     * display with elapsed X
-* add pagination
-* add sort order
+* add pagination X
+* add sort order by time or length
 * add timing to more spots: path,...
 
 ------------------------------------------------
@@ -146,7 +146,9 @@ curl -X POST http://localhost:8000/api/measurement -H "Content-Type: application
 -d '{"measured_at":"2024-06-24T19:23:33.001234","object_uuid":"a1a2a3a4b1b2c1c2d1d2d3d4d5d6d7d8",
 "sensor_uuid":"e1a2a3a4b1b2c1c2d1d2d3d4d5d6d7d8", "latitude":33.65,"longitude":23.99,"object_length":99.9}'
 
-curl -X GET "http://localhost:8000/api/find_measurements?start=2024-06-28T22:01:10&end=2024-06-29T22:01:15" | jq . |
+curl -X
+GET "http://localhost:8000/api/find_measurements?start=2024-06-28T22:01:10&end=2024-06-29T22:01:15&page_size=10&page_index=0" |
+jq . |
 vim -
 
 curl -X

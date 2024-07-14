@@ -1,5 +1,7 @@
 use chrono::{NaiveDateTime, ParseResult};
 use serde::{Deserialize, Serialize};
+use std::fmt;
+use std::fmt::{Display, Formatter};
 
 /// Measurement is a single measurement of an object by a Sensor at a time
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -12,6 +14,32 @@ pub struct Measurement {
     pub latitude: f32,
     pub longitude: f32,
     pub object_length: f32,
+}
+
+/// Timings is a collection of timings for a single request and response
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Times {
+    pub request_sent_at: NaiveDateTime,
+    pub query_start: NaiveDateTime,
+    pub query_complete: NaiveDateTime,
+    pub data_mangling_complete: NaiveDateTime,
+    pub response_received_at: NaiveDateTime,
+}
+
+impl Display for Times {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let total_time = self.response_received_at - self.request_sent_at;
+        let query_time = self.query_complete - self.query_start;
+        write!(f, "total: {}, query: {}", total_time, query_time)
+    }
+}
+
+/// InstrumentedResponse is a response that includes data about
+/// the performance of the server in handling the request
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct InstrumentedResponse<T> {
+    pub payload: T,
+    pub times: Times,
 }
 
 /// PathPoint is a single point in a Path as measured by a Sensor

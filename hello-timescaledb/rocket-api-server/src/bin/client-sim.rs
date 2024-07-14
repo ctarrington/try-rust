@@ -1,6 +1,6 @@
 use clap::Parser;
 use rocket::tokio;
-use rocket_api_server::{Measurement, Path, TIME_FORMAT};
+use rocket_api_server::{Measurement, Path, Times, TIME_FORMAT};
 
 /// Simulate a client getting measurements from the API server
 #[derive(Parser)]
@@ -60,17 +60,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             end.format(TIME_FORMAT),
         );
 
+        let request_sent_at = chrono::Utc::now().naive_utc();
         let result = client.get(&url).send().await;
 
-        println!("URL: {}", url);
         if let Err(err) = result {
             println!("Error: {}", err);
             continue;
         }
 
         let response = result.unwrap();
-        let measurements: Vec<Measurement> = response.json().await?;
-        println!("{}", serde_json::to_string_pretty(&measurements).unwrap());
+        let instrumented_response: rocket_api_server::InstrumentedResponse<Vec<Measurement>> =
+            response.json().await?;
+        let measurements = instrumented_response.payload;
+        let times = Times {
+            request_sent_at,
+            response_received_at: chrono::Utc::now().naive_utc(),
+            ..instrumented_response.times
+        };
+        println!("n: {}, {}", measurements.len(), times);
 
         if args.iterations != 0 {
             iteration_count += 1;

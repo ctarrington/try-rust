@@ -106,7 +106,15 @@ the parameters in queries are $1, $2, $3, etc for postgres, not ? like in sqlite
 ------------------------------------------------
 
 * test error handling for clients X
-* test error handling for server
+* test error handling for server X
+
+------------------------------------------------
+
+* add instrumentation to responses
+    * times X
+    * display with elapsed
+* add pagination
+* add sort order
 
 ------------------------------------------------
 

@@ -1,7 +1,9 @@
 use crate::RocketApiDatabase;
 use rocket::get;
 use rocket::serde::json::Json;
-use rocket_api_server::{convert_to_uuid, parse_datetime, Measurement};
+use rocket_api_server::{
+    convert_to_uuid, parse_datetime, InstrumentedResponse, Measurement, Times,
+};
 use rocket_db_pools::Connection;
 
 #[get("/find_measurements?<start>&<end>")]
@@ -9,10 +11,11 @@ pub async fn find_measurements(
     mut db: Connection<RocketApiDatabase>,
     start: &str,
     end: &str,
-) -> Result<Json<Vec<Measurement>>, rocket::response::Debug<anyhow::Error>> {
+) -> Result<Json<InstrumentedResponse<Vec<Measurement>>>, rocket::response::Debug<anyhow::Error>> {
     let start = parse_datetime(&start).map_err(|e| anyhow::Error::from(e))?;
     let end = parse_datetime(&end).map_err(|e| anyhow::Error::from(e))?;
 
+    let query_start = chrono::Utc::now().naive_utc();
     // Distinct on object_uuid and order by measured_at descending combine to give the most recent
     // measurement for each object
     let query_results = sqlx::query!(
@@ -23,6 +26,7 @@ pub async fn find_measurements(
         .fetch_all(&mut **db)
         .await
         .map_err(|e| rocket::response::Debug(anyhow::Error::from(e)))?;
+    let query_complete = chrono::Utc::now().naive_utc();
 
     let mut measurements: Vec<Measurement> = vec![];
     for record in query_results {
@@ -47,5 +51,19 @@ pub async fn find_measurements(
         });
     }
 
-    Ok(Json(measurements))
+    let data_mangling_complete = chrono::Utc::now().naive_utc();
+
+    let times = Times {
+        request_sent_at: Default::default(),
+        query_start,
+        query_complete,
+        data_mangling_complete,
+        response_received_at: Default::default(),
+    };
+
+    let instrumented_response = InstrumentedResponse {
+        payload: measurements,
+        times,
+    };
+    Ok(Json(instrumented_response))
 }

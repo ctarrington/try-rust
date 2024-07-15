@@ -120,7 +120,8 @@ the parameters in queries are $1, $2, $3, etc for postgres, not ? like in sqlite
 ------------------------------------------------
 
 * take some benchmarks
-    *
+* try a materialized view for the latest record for each object
+* experiment with different shard intervals
 
 * ------------------------------------------------
 * how to store json ish (protobuf, json, *flatbuffers*) for the sparse and crazy parts of the model
@@ -156,3 +157,7 @@ GET "http://localhost:8000/api/get_path?start=2024-06-29T01:01:01&end=2024-06-29
 jq .
 
 curl -X GET "http://localhost:8000/api/get_diagnostics" | jq .
+
+# sql commands
+
+select * from chunks_detailed_size('measurements')"

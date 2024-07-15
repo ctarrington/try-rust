@@ -10,4 +10,4 @@ CREATE TABLE "measurements" (
     longitude REAL NOT NULL,
     object_length REAL NOT NULL
 );
-SELECT create_hypertable('measurements', 'measured_at');
+SELECT create_hypertable('measurements', by_range('measured_at', INTERVAL '60 minutes'));

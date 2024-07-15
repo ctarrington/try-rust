@@ -51,8 +51,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut iteration_count = 0;
 
     while args.iterations == 0 || iteration_count < args.iterations {
-        let loop_start = chrono::Utc::now().naive_utc();
-
         let end =
             chrono::Utc::now().naive_utc() - chrono::Duration::minutes(args.ago_minutes as i64);
         let start = end - chrono::Duration::minutes(args.window_minutes as i64);
@@ -107,12 +105,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         // take a break
-        let loop_end = chrono::Utc::now().naive_utc();
-        let elapsed = loop_end - loop_start;
-        let sleep_time =
-            chrono::Duration::milliseconds(args.interval_milliseconds as i64) - elapsed;
         tokio::time::sleep(tokio::time::Duration::from_millis(
-            sleep_time.num_milliseconds() as u64,
+            args.interval_milliseconds as u64,
         ))
         .await;
     }

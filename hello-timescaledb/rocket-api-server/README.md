@@ -1,6 +1,8 @@
 # Sources
 
-https://github.com/rwf2/Rocket/blob/v0.5.1/examples/databases/src/sqlx.rs
+* https://github.com/rwf2/Rocket/blob/v0.5.1/examples/databases/src/sqlx.rs
+* https://www.postgresql.org/docs/current/queries-limit.html
+* https://www.timescale.com/blog/13-tips-to-improve-postgresql-insert-performance/
 
 # Database Notes
 
@@ -114,8 +116,17 @@ the parameters in queries are $1, $2, $3, etc for postgres, not ? like in sqlite
     * times X
     * display with elapsed X
 * add pagination X
+* https://www.timescale.com/blog/13-tips-to-improve-postgresql-insert-performance/
+    * bulk insert
+* add ago option by seconds and try with tip 5 seconds ago
+* floor request times to the nearest second
+* floor request times to the nearest 10 seconds
+* floor request times to the nearest 20 seconds
+* mess with isolation level
+* mess with interval
+* mess with materialized views
 * add sort order by time or length
-* add timing to more spots: path,...
+* add timing to more spots: path,... sends
 
 ------------------------------------------------
 

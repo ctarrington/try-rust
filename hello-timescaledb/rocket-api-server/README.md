@@ -38,8 +38,6 @@ cargo watch -x 'build --release --bin client-sim'
 
 ## Run the sensor sim
 
-cargo run --release --bin sensor-sim
-
 ./target/release/sensor-sim --future-count 4 --object-count 1000
 
 ## Run the client sim
@@ -116,9 +114,13 @@ the parameters in queries are $1, $2, $3, etc for postgres, not ? like in sqlite
     * times X
     * display with elapsed X
 * add pagination X
+* add ago option by seconds and try with tip 5 seconds ago
+* more fields
+
+---------- Performance Ideas ------------------
+
 * https://www.timescale.com/blog/13-tips-to-improve-postgresql-insert-performance/
     * bulk insert
-* add ago option by seconds and try with tip 5 seconds ago
 * floor request times to the nearest second
 * floor request times to the nearest 10 seconds
 * floor request times to the nearest 20 seconds
@@ -172,3 +174,10 @@ curl -X GET "http://localhost:8000/api/get_diagnostics" | jq .
 # sql commands
 
 select * from chunks_detailed_size('measurements')"
+
+# podman commands
+
+podman stats    
+podman container ls    
+podman top timescaledb    
+podman run -d --name timescaledb -p 5432:5432 -e POSTGRES_PASSWORD=password docker.io/timescale/timescaledb-ha:pg16    

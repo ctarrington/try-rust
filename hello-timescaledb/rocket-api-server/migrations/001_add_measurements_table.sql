@@ -8,6 +8,19 @@ CREATE TABLE "measurements" (
     object_uuid UUID NOT NULL,
     latitude REAL NOT NULL,
     longitude REAL NOT NULL,
-    object_length REAL NOT NULL
+    altitude REAL NOT NULL,
+    x_position REAL NOT NULL,
+    y_position REAL NOT NULL,
+    z_position REAL NOT NULL,
+    x_velocity REAL NOT NULL,
+    y_velocity REAL NOT NULL,
+    z_velocity REAL NOT NULL,
+    object_length REAL,
+    object_width REAL,
+    object_height REAL,
+    flavor TEXT,
+    toppings TEXT,
+    color TEXT,
+    texture TEXT
 );
-SELECT create_hypertable('measurements', by_range('measured_at', INTERVAL '60 minutes'));
+SELECT create_hypertable('measurements', by_range('measured_at', INTERVAL '120 minutes'));

@@ -1,4 +1,5 @@
 use clap::Parser;
+use rand::prelude::ThreadRng;
 use rand::Rng;
 use rocket::tokio;
 use rocket_api_server::Measurement;
@@ -37,6 +38,32 @@ struct Args {
 }
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let flavors = vec![
+        "chocolate",
+        "vanilla",
+        "strawberry",
+        "mint",
+        "rocky road",
+        "pistachio",
+        "peanut butter",
+    ];
+
+    let toppings = vec![
+        "sprinkles",
+        "whipped cream",
+        "chocolate syrup",
+        "caramel",
+        "nuts",
+        "cherries",
+        "cookie dough",
+    ];
+
+    let colors = vec![
+        "white", "red", "green", "blue", "brown", "yellow", "orange", "purple", "indigo",
+    ];
+
+    let textures = vec!["smooth", "rough", "tacky"];
+
     let mut rng = rand::thread_rng();
 
     let sensor_uuid = uuid::Uuid::new_v4();
@@ -70,7 +97,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 measured_at: chrono::Utc::now().naive_utc(),
                 latitude: 10.0 + object_index as f32 * 0.2,
                 longitude: 2.0 + tick as f32 * 0.002,
-                object_length: 10.0 + object_index as f32 * 0.5,
+                altitude: 110.0,
+                x_position: 1.0 + object_index as f32 * 0.1,
+                y_position: 1.0 + tick as f32 * 0.01,
+                z_position: 1.0,
+                x_velocity: 0.01,
+                y_velocity: 0.02,
+                z_velocity: 0.03,
+                flavor: pick_from_list(&mut rng, &flavors),
+                toppings: pick_from_list(&mut rng, &toppings),
+                color: pick_from_list(&mut rng, &colors),
+                texture: pick_from_list(&mut rng, &textures),
+                object_height: Some(33.0),
+                object_width: Some(22.0),
+                object_length: Some(10.0 + object_index as f32 * 0.5),
             };
 
             let client = client.clone();
@@ -106,4 +146,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     Ok(())
+}
+
+fn pick_from_list(rng: &mut ThreadRng, list: &Vec<&str>) -> Option<String> {
+    let index = rng.gen_range(0..=list.len());
+    if index == list.len() {
+        return None;
+    }
+    Some(list[index].to_string())
 }

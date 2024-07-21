@@ -13,7 +13,20 @@ pub struct Measurement {
     pub recorded_at: Option<NaiveDateTime>,
     pub latitude: f32,
     pub longitude: f32,
-    pub object_length: f32,
+    pub altitude: f32,
+    pub x_position: f32,
+    pub y_position: f32,
+    pub z_position: f32,
+    pub x_velocity: f32,
+    pub y_velocity: f32,
+    pub z_velocity: f32,
+    pub object_length: Option<f32>,
+    pub object_width: Option<f32>,
+    pub object_height: Option<f32>,
+    pub flavor: Option<String>,
+    pub toppings: Option<String>,
+    pub color: Option<String>,
+    pub texture: Option<String>,
 }
 
 /// Timings is a collection of timings for a single request and response

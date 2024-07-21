@@ -12,15 +12,15 @@ struct Args {
     #[arg(short, long, default_value_t = 1000)]
     interval_milliseconds: usize,
 
-    /// window of time in minutes to get measurements
-    #[arg(short, long, default_value_t = 10)]
-    window_minutes: usize,
+    /// window of time in seconds to get measurements
+    #[arg(short, long, default_value_t = 600)]
+    window_seconds: usize,
 
-    /// Minutes behind now to get measurements
-    /// now - ago - window_minutes is the start time for the query
+    /// Seconds behind now to get measurements
+    /// now - ago - window_seconds is the start time for the query
     /// now - ago is the end time for the query
     #[arg(short, long, default_value_t = 0)]
-    ago_minutes: usize,
+    ago_seconds: usize,
 
     /// number of gets to perform
     /// 0 means forever
@@ -28,7 +28,7 @@ struct Args {
     iterations: usize,
 
     /// number of objects to fetch path for
-    #[arg(short, long, default_value_t = 1)]
+    #[arg(short, long, default_value_t = 0)]
     path_count: usize,
 
     /// URL of the API server
@@ -38,13 +38,17 @@ struct Args {
         default_value = "http://localhost:8000/api/find_measurements"
     )]
     server_url: String,
+
+    /// flavor of measurements to get
+    #[arg(short, long, default_value = "vanilla")]
+    flavor: String,
 }
 
 //noinspection ALL
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut rng = rand::thread_rng();
-    let page_index_range = Uniform::new(0, 100);
+    let page_index_range = Uniform::new(0, 1);
     let args = Args::parse();
 
     let client = reqwest::Client::new();
@@ -52,15 +56,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     while args.iterations == 0 || iteration_count < args.iterations {
         let end =
-            chrono::Utc::now().naive_utc() - chrono::Duration::minutes(args.ago_minutes as i64);
-        let start = end - chrono::Duration::minutes(args.window_minutes as i64);
+            chrono::Utc::now().naive_utc() - chrono::Duration::seconds(args.ago_seconds as i64);
+        let start = end - chrono::Duration::seconds(args.window_seconds as i64);
         let page_index = rng.sample(page_index_range);
 
         let url = format!(
-            "{}?start={}&end={}&page_index={}&page_size=100",
+            "{}?start={}&end={}&flavor={}&page_index={}&page_size=100",
             args.server_url,
             start.format(TIME_FORMAT),
             end.format(TIME_FORMAT),
+            args.flavor,
             page_index,
         );
 
@@ -81,7 +86,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             response_received_at: chrono::Utc::now().naive_utc(),
             ..instrumented_response.times
         };
-        println!("n: {}, {}", measurements.len(), times);
+        println!(
+            "{} -> n: {}, {}, {:?}",
+            &url,
+            measurements.len(),
+            times,
+            measurements
+        );
 
         if args.iterations != 0 {
             iteration_count += 1;

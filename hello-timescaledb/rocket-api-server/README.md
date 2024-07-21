@@ -114,11 +114,16 @@ the parameters in queries are $1, $2, $3, etc for postgres, not ? like in sqlite
     * times X
     * display with elapsed X
 * add pagination X
-* add ago option by seconds and try with tip 5 seconds ago
-* more fields
+* switch ago option in client to seconds X
+* more fields X
+* search for text with like X
+* search for value ranges with between for lat/long
+* sort by not time
 
 ---------- Performance Ideas ------------------
 
+* https://www.timescale.com/blog/best-practices-for-picking-postgresql-data-types
+    * do include timezone??
 * https://www.timescale.com/blog/13-tips-to-improve-postgresql-insert-performance/
     * bulk insert
 * floor request times to the nearest second

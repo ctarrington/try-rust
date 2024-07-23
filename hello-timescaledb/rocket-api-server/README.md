@@ -117,7 +117,9 @@ the parameters in queries are $1, $2, $3, etc for postgres, not ? like in sqlite
 * switch ago option in client to seconds X
 * more fields X
 * search for text with like X
+* make text search optional
 * search for value ranges with between for lat/long
+* make value ranges optional
 * sort by not time
 
 ---------- Performance Ideas ------------------

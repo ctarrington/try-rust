@@ -7,7 +7,7 @@ pub trait Observer<T> {
 
 pub trait Subject<T> {
     fn add_observer(&mut self, observer: Rc<RefCell<dyn Observer<T>>>);
-    fn notify_observers(&mut self);
+    fn notify_observers(&self);
 }
 
 #[cfg(test)]
@@ -32,8 +32,8 @@ mod tests {
             self.observers.push(observer);
         }
 
-        fn notify_observers(&mut self) {
-            for observer in &mut self.observers {
+        fn notify_observers(&self) {
+            for observer in &self.observers {
                 observer.borrow_mut().update(self.value);
             }
         }

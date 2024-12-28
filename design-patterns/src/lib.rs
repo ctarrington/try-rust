@@ -1,2 +1,3 @@
-pub mod observer;
 pub mod decorator;
+pub mod observer;
+pub mod singleton_lazy_lock;

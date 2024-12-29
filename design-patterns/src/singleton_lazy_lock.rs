@@ -35,9 +35,10 @@ impl AccessCountFile {
     }
 }
 
+static ACCESS_COUNT_FILE: LazyLock<AccessCountFile> = LazyLock::new(|| AccessCountFile::default());
+
 static CONFIG: LazyLock<String> = LazyLock::new(|| {
-    let access_count_file = AccessCountFile::default();
-    access_count_file.increment_access_count();
+    ACCESS_COUNT_FILE.increment_access_count();
     println!("loading config");
 
     "This is the best config".to_string()
@@ -49,25 +50,22 @@ pub fn get_config() -> &'static String {
 
 #[cfg(test)]
 mod tests {
-    use crate::singleton_lazy_lock::{get_config, AccessCountFile};
+    use crate::singleton_lazy_lock::{get_config, AccessCountFile, ACCESS_COUNT_FILE};
     use std::thread;
     use std::time::Duration;
 
     #[test]
     fn test_get_config() {
-        let access_count_file = AccessCountFile::default();
-
-        let original_access_count = access_count_file.get_access_count();
+        let original_access_count = ACCESS_COUNT_FILE.get_access_count();
         assert_eq!(get_config(), &"This is the best config".to_string());
         assert_eq!(get_config(), &"This is the best config".to_string());
-        let final_access_count = access_count_file.get_access_count();
+        let final_access_count = ACCESS_COUNT_FILE.get_access_count();
         assert_eq!(final_access_count, original_access_count + 1);
     }
 
     #[test]
     fn test_get_config_threaded() {
-        let access_count_file = AccessCountFile::default();
-        let original_access_count = access_count_file.get_access_count();
+        let original_access_count = ACCESS_COUNT_FILE.get_access_count();
         let mut handles = vec![];
 
         for ctr in 1..5 {
@@ -86,7 +84,7 @@ mod tests {
         }
         println!("all done");
 
-        let final_access_count = access_count_file.get_access_count();
+        let final_access_count = ACCESS_COUNT_FILE.get_access_count();
         assert_eq!(final_access_count, original_access_count + 1);
         println!("final_access_count {final_access_count}")
     }

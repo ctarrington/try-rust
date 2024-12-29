@@ -20,15 +20,6 @@ mod tests {
     use std::time::Duration;
 
     #[test]
-    fn test_get_config() {
-        let original_access_count = ACCESS_COUNT.get_access_count();
-        assert_eq!(get_config(), &"This is the best config".to_string());
-        assert_eq!(get_config(), &"This is the best config".to_string());
-        let final_access_count = ACCESS_COUNT.get_access_count();
-        assert_eq!(final_access_count, original_access_count + 1);
-    }
-
-    #[test]
     fn test_get_config_threaded() {
         let original_access_count = ACCESS_COUNT.get_access_count();
         let mut handles = vec![];

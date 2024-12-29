@@ -2,49 +2,92 @@ use std::fs;
 use std::string::ToString;
 use std::sync::LazyLock;
 
-fn get_access_count() -> usize {
-    let filename = "./.access_count.txt";
-    let file_contents = fs::read_to_string(filename);
-    match file_contents {
-        Ok(contents) => {
-            let value = contents.parse::<i32>().unwrap();
-            value as usize
+#[derive(Default)]
+struct AccessCountFile {}
+
+impl AccessCountFile {
+    fn get_access_count(&self) -> usize {
+        let filename = "./.access_count.txt";
+        let file_contents = fs::read_to_string(filename);
+        match file_contents {
+            Ok(contents) => {
+                if contents.is_empty() {
+                    fs::write(filename, "0").expect("failed to write to file");
+                    0
+                } else {
+                    let value = contents.parse::<i32>().unwrap();
+                    value as usize
+                }
+            }
+            _ => {
+                fs::write(filename, "0").expect("failed to write to file");
+                0
+            }
         }
-        _ => {
-            fs::write(filename, "0").expect("failed to write to file");
-            0
-        }
+    }
+
+    fn increment_access_count(&self) {
+        let filename = "./.access_count.txt";
+        let value = self.get_access_count();
+        let new_value = value + 1;
+
+        fs::write(filename, format!("{new_value}")).expect("failed to write to file");
     }
 }
 
-fn increment_access_count() {
-    let filename = "./.access_count.txt";
-    let value = get_access_count();
-    let new_value = value + 1;
-
-    fs::write(filename, format!("{new_value}")).expect("failed to write to file");
-}
-
 static CONFIG: LazyLock<String> = LazyLock::new(|| {
+    let access_count_file = AccessCountFile::default();
+    access_count_file.increment_access_count();
     println!("loading config");
-    increment_access_count();
+
     "This is the best config".to_string()
 });
 
 pub fn get_config() -> &'static String {
-    &*CONFIG
+    &CONFIG
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::singleton_lazy_lock::{get_access_count, get_config};
+    use crate::singleton_lazy_lock::{get_config, AccessCountFile};
+    use std::thread;
+    use std::time::Duration;
 
     #[test]
     fn test_get_config() {
-        let original_access_count = get_access_count();
+        let access_count_file = AccessCountFile::default();
+
+        let original_access_count = access_count_file.get_access_count();
         assert_eq!(get_config(), &"This is the best config".to_string());
         assert_eq!(get_config(), &"This is the best config".to_string());
-        let final_access_count = get_access_count();
+        let final_access_count = access_count_file.get_access_count();
         assert_eq!(final_access_count, original_access_count + 1);
+    }
+
+    #[test]
+    fn test_get_config_threaded() {
+        let access_count_file = AccessCountFile::default();
+        let original_access_count = access_count_file.get_access_count();
+        let mut handles = vec![];
+
+        for ctr in 1..5 {
+            let handle = thread::spawn(move || {
+                let index = ctr;
+                println!("run {index}");
+                get_config();
+                thread::sleep(Duration::from_millis(100));
+                println!("done {index}");
+            });
+            handles.push(handle);
+        }
+
+        for handle in handles {
+            handle.join().unwrap();
+        }
+        println!("all done");
+
+        let final_access_count = access_count_file.get_access_count();
+        assert_eq!(final_access_count, original_access_count + 1);
+        println!("final_access_count {final_access_count}")
     }
 }

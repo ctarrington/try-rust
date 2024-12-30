@@ -14,6 +14,11 @@ impl Widget {
     }
 }
 
+#[derive(Debug)]
+pub enum WidgetBuilderError {
+    InsufficientResources(String),
+}
+
 #[derive(Default)]
 pub struct WidgetBuilder {
     widget: Widget,
@@ -30,21 +35,27 @@ impl WidgetBuilder {
         self
     }
 
-    pub fn make(self) -> Widget {
-        self.widget
+    pub fn make(self) -> Result<Widget, WidgetBuilderError> {
+        if self.widget.color == "red" {
+            return Err(WidgetBuilderError::InsufficientResources(
+                "Sorry out of red".to_string(),
+            ));
+        }
+        Ok(self.widget)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::builder::{Widget, WidgetBuilder};
+    use crate::builder::{Widget, WidgetBuilder, WidgetBuilderError};
 
     #[test]
     fn fluent_widget_creation() {
-        let widget: Widget = WidgetBuilder::default()
+        let widget = WidgetBuilder::default()
             .with_size(10)
             .with_color("blue")
-            .make();
+            .make()
+            .unwrap();
         assert_eq!(widget.color(), "blue");
         assert_eq!(widget.size(), 10);
     }
@@ -54,9 +65,22 @@ mod tests {
         let builder = WidgetBuilder::default();
         // need to receive the moved builder
         let builder = builder.with_size(11);
-        let builder = builder.with_color("red");
-        let widget: Widget = builder.make();
-        assert_eq!(widget.color(), "red");
+        let builder = builder.with_color("green");
+        let widget: Widget = builder.make().unwrap();
+        assert_eq!(widget.color(), "green");
         assert_eq!(widget.size(), 11);
+    }
+
+    #[test]
+    fn out_of_red() {
+        let result = WidgetBuilder::default()
+            .with_size(10)
+            .with_color("red")
+            .make();
+
+        assert!(matches!(
+            result,
+            Err(WidgetBuilderError::InsufficientResources(_))
+        ));
     }
 }

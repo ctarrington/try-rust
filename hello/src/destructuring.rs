@@ -1,5 +1,10 @@
 #[cfg(test)]
 mod tests {
+    struct Widget {
+        size: usize,
+        color: (u8, u8, u8),
+    }
+
     struct Holder<T>(T);
 
     fn capitalize(Holder(value): Holder<String>) -> String {
@@ -8,6 +13,15 @@ mod tests {
 
     fn add_three(Holder(value): Holder<i32>) -> i32 {
         value + 3
+    }
+
+    fn debug_widget(
+        Holder(Widget {
+            size,
+            color: (r, g, b),
+        }): Holder<Widget>,
+    ) -> String {
+        format!("size: {size}, rgb: ({r}, {g}, {b})")
     }
 
     #[test]
@@ -28,5 +42,11 @@ mod tests {
 
         let held_number = Holder(10);
         assert_eq!(add_three(held_number), 13);
+
+        let held_widget = Holder(Widget {
+            size: 1,
+            color: (2, 4, 6),
+        });
+        assert_eq!(debug_widget(held_widget), "size: 1, rgb: (2, 4, 6)")
     }
 }

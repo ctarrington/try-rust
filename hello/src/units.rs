@@ -108,6 +108,14 @@ mod tests {
     }
 
     #[test]
+    fn test_convert_slice_vec_longer() {
+        let kilometers = vec![Kilometers(1.0), Kilometers(2.0)];
+        let meters = convert_slice(kilometers.as_slice());
+        assert_eq!(1000.0, meters[0].0);
+        assert_eq!(2000.0, meters[1].0);
+    }
+
+    #[test]
     fn test_convert_slice_array() {
         let kilometers = &[Kilometers(1.0), Kilometers(2.0)];
         let meters = convert_slice(kilometers);

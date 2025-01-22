@@ -4,6 +4,7 @@ struct Meters(f64);
 
 struct Millimeters(f64);
 
+#[derive(Clone)]
 struct Kilometers(f64);
 
 impl Display for Meters {
@@ -54,24 +55,63 @@ impl From<Kilometers> for Millimeters {
     }
 }
 
-#[test]
-fn test_conversion() {
-    let m = Meters(5.0);
-    let mm: Millimeters = m.into();
-    assert_eq!(5000.0, mm.0);
-    assert_eq!("5000mm", format!("{}", mm));
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    let m: Meters = mm.into();
-    assert_eq!(5.0, m.0);
-    assert_eq!("5m", format!("{}", m));
+    fn convert_vec(lengths: Vec<Kilometers>) -> Vec<Meters> {
+        lengths.into_iter().map(|length| length.into()).collect()
+    }
 
-    let m: Meters = Kilometers(1.0).into();
-    assert_eq!(1000.0, m.0);
+    fn convert_slice(lengths: &[Kilometers]) -> Vec<Meters> {
+        lengths
+            .into_iter()
+            .map(|length| length.clone().into())
+            .collect()
+    }
+    #[test]
+    fn test_conversion() {
+        let m = Meters(5.0);
+        let mm: Millimeters = m.into();
+        assert_eq!(5000.0, mm.0);
+        assert_eq!("5000mm", format!("{}", mm));
 
-    let mm: Millimeters = Kilometers(1.0).into();
-    assert_eq!(1_000_000.0, mm.0);
+        let m: Meters = mm.into();
+        assert_eq!(5.0, m.0);
+        assert_eq!("5m", format!("{}", m));
 
-    let km: Kilometers = Meters(1500.0).into();
-    assert_eq!(1.5, km.0);
-    assert_eq!("1.5km", format!("{}", km));
+        let m: Meters = Kilometers(1.0).into();
+        assert_eq!(1000.0, m.0);
+
+        let mm: Millimeters = Kilometers(1.0).into();
+        assert_eq!(1_000_000.0, mm.0);
+
+        let km: Kilometers = Meters(1500.0).into();
+        assert_eq!(1.5, km.0);
+        assert_eq!("1.5km", format!("{}", km));
+    }
+
+    #[test]
+    fn test_convert_vec() {
+        let kilometers = vec![Kilometers(1.0), Kilometers(2.0)];
+        let meters = convert_vec(kilometers);
+        assert_eq!(1000.0, meters[0].0);
+        assert_eq!(2000.0, meters[1].0);
+    }
+
+    #[test]
+    fn test_convert_slice_vec() {
+        let kilometers = vec![Kilometers(1.0), Kilometers(2.0)];
+        let meters = convert_slice(&kilometers);
+        assert_eq!(1000.0, meters[0].0);
+        assert_eq!(2000.0, meters[1].0);
+    }
+
+    #[test]
+    fn test_convert_slice_array() {
+        let kilometers = &[Kilometers(1.0), Kilometers(2.0)];
+        let meters = convert_slice(kilometers);
+        assert_eq!(1000.0, meters[0].0);
+        assert_eq!(2000.0, meters[1].0);
+    }
 }

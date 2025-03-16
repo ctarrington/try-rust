@@ -64,5 +64,15 @@ mod tests {
             }) if r < g && g < b
         );
         assert!(rising);
+
+        let small = matches!(held_widget, Holder(Widget {size, ..}) if size < 2);
+        assert!(small);
+
+        let big_widget = Holder(Widget {
+            size: 10,
+            color: (1, 2, 3),
+        });
+        let small = matches!(big_widget, Holder(Widget {size, ..}) if size < 2);
+        assert!(!small);
     }
 }

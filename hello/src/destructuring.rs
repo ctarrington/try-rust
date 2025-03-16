@@ -49,4 +49,20 @@ mod tests {
         });
         assert_eq!(debug_widget(held_widget), "size: 1, rgb: (2, 4, 6)")
     }
+
+    #[test]
+    fn test_matches() {
+        let held_widget = Holder(Widget {
+            size: 1,
+            color: (2, 4, 6),
+        });
+
+        let rising = matches!(
+            held_widget,
+            Holder(Widget {
+                color: (r, g, b),..
+            }) if r < g && g < b
+        );
+        assert!(rising);
+    }
 }

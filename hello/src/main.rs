@@ -14,6 +14,7 @@ mod holder;
 mod units;
 
 mod destructuring;
+mod euclid_gcd;
 mod pass_things;
 mod query_builder;
 

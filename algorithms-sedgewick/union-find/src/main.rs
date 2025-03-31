@@ -15,8 +15,8 @@ struct QuickFind<const LENGTH: usize> {
 impl<const LENGTH: usize> QuickFind<LENGTH> {
     fn new() -> QuickFind<LENGTH> {
         let mut site_to_component = [0; LENGTH];
-        for index in 0..LENGTH {
-            site_to_component[index] = index;
+        for (index, item) in site_to_component.iter_mut().enumerate() {
+            *item = index;
         }
 
         QuickFind { site_to_component }
@@ -35,9 +35,9 @@ impl<const LENGTH: usize> QuickFind<LENGTH> {
         let component_b = self.find(b);
 
         if component_a != component_b {
-            for index in 0..LENGTH {
-                if self.site_to_component[index] == component_a {
-                    self.site_to_component[index] = component_b;
+            for component in self.site_to_component.iter_mut() {
+                if *component == component_a {
+                    *component = component_b;
                 }
             }
         }

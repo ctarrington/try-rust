@@ -4,12 +4,15 @@ fn main() {
     assert!(quick_find.connected(0, 1));
 }
 
-trait UnionFind<const LENGTH: usize> {
+pub trait UnionFind<const LENGTH: usize> {
     // join together p and q
     fn union(&mut self, p: usize, q: usize);
 
     // answers true if p and q are in the same component
     fn connected(&mut self, p: usize, q: usize) -> bool;
+
+    fn count_reads(&self) -> u64;
+    fn count_writes(&self) -> u64;
 }
 
 struct InstrumentedArray<const LENGTH: usize> {
@@ -78,12 +81,37 @@ impl<const LENGTH: usize> UnionFind<LENGTH> for QuickFind<LENGTH> {
             }
         }
     }
+
+    fn count_reads(&self) -> u64 {
+        self.site_to_component.reads
+    }
+
+    fn count_writes(&self) -> u64 {
+        self.site_to_component.writes
+    }
+}
+
+pub fn connect_evens_odds<const LENGTH: usize, T>(uf: &mut T)
+where
+    T: UnionFind<LENGTH>,
+{
+    for index in 0..LENGTH - 2 {
+        uf.union(index, index + 2);
+    }
+}
+
+pub fn verify_counts<const LENGTH: usize, T>(uf: &T, reads: u64, writes: u64)
+where
+    T: UnionFind<LENGTH>,
+{
+    assert_eq!(reads, uf.count_reads());
+    assert_eq!(writes, uf.count_writes());
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::QuickFind;
     use crate::UnionFind;
+    use crate::{QuickFind, connect_evens_odds, verify_counts};
 
     #[test]
     fn evens_odds_manual() {
@@ -125,17 +153,13 @@ mod tests {
     #[test]
     fn evens_odds() {
         let mut quick_find: QuickFind<10> = QuickFind::new();
+        assert_eq!(quick_find.count_reads(), 0);
+        assert_eq!(quick_find.count_writes(), 10);
+
         connect_evens_odds(&mut quick_find);
+        verify_counts(&quick_find, 12 * 8, 30);
+
         assert!(quick_find.connected(0, 2));
         assert!(!quick_find.connected(0, 1));
-    }
-
-    fn connect_evens_odds<const LENGTH: usize, T>(uf: &mut T)
-    where
-        T: UnionFind<LENGTH>,
-    {
-        for index in 0..LENGTH - 3 {
-            uf.union(index, index + 2);
-        }
     }
 }

@@ -4,6 +4,14 @@ fn main() {
     assert!(quick_find.connected(0, 1));
 }
 
+trait UnionFind<const LENGTH: usize> {
+    // join together p and q
+    fn union(&mut self, p: usize, q: usize);
+
+    // answers true if p and q are in the same component
+    fn connected(&mut self, p: usize, q: usize) -> bool;
+}
+
 struct InstrumentedArray<const LENGTH: usize> {
     values: [usize; LENGTH],
     reads: u64,
@@ -51,12 +59,14 @@ impl<const LENGTH: usize> QuickFind<LENGTH> {
     pub fn find(&mut self, site_index: usize) -> usize {
         self.site_to_component.get(site_index)
     }
+}
 
-    pub fn connected(&mut self, a: usize, b: usize) -> bool {
+impl<const LENGTH: usize> UnionFind<LENGTH> for QuickFind<LENGTH> {
+    fn connected(&mut self, a: usize, b: usize) -> bool {
         self.find(a) == self.find(b)
     }
 
-    pub fn union(&mut self, a: usize, b: usize) {
+    fn union(&mut self, a: usize, b: usize) {
         let component_a = self.find(a);
         let component_b = self.find(b);
 
@@ -73,9 +83,10 @@ impl<const LENGTH: usize> QuickFind<LENGTH> {
 #[cfg(test)]
 mod tests {
     use crate::QuickFind;
+    use crate::UnionFind;
 
     #[test]
-    fn evens_odds() {
+    fn evens_odds_manual() {
         let mut quick_find: QuickFind<10> = QuickFind::new();
         assert_eq!(quick_find.site_to_component.reads, 0);
         assert_eq!(quick_find.site_to_component.writes, 10);
@@ -109,5 +120,22 @@ mod tests {
         assert_eq!(quick_find.site_to_component.reads, 12 * 8 + 2);
         assert!(!quick_find.connected(0, 1));
         assert_eq!(quick_find.site_to_component.reads, 12 * 8 + 4);
+    }
+
+    #[test]
+    fn evens_odds() {
+        let mut quick_find: QuickFind<10> = QuickFind::new();
+        connect_evens_odds(&mut quick_find);
+        assert!(quick_find.connected(0, 2));
+        assert!(!quick_find.connected(0, 1));
+    }
+
+    fn connect_evens_odds<const LENGTH: usize, T>(uf: &mut T)
+    where
+        T: UnionFind<LENGTH>,
+    {
+        for index in 0..LENGTH - 3 {
+            uf.union(index, index + 2);
+        }
     }
 }

@@ -52,8 +52,8 @@ impl<const LENGTH: usize> UnionFind<LENGTH> for QuickFind<LENGTH> {
 mod tests {
     use crate::QuickFind;
     use crate::UnionFind;
-    use crate::union_find::connect_evens_odds;
     use crate::union_find::verify_counts;
+    use crate::union_find::{connect_evens_odds, orderly_groups};
 
     #[test]
     fn evens_odds_manual() {
@@ -103,5 +103,13 @@ mod tests {
 
         assert!(quick_find.connected(0, 2));
         assert!(!quick_find.connected(0, 1));
+    }
+
+    #[test]
+    fn orderly() {
+        let mut quick_find: QuickFind<12> = QuickFind::new();
+        orderly_groups(&mut quick_find, 4);
+        assert!(quick_find.connected(0, 4));
+        verify_counts(&quick_find, 114, 24);
     }
 }

@@ -1,5 +1,5 @@
 use crate::quick_find::QuickFind;
-use crate::union_find::{UnionFind, connect_evens_odds, verify_counts};
+use crate::union_find::{UnionFind, connect_evens_odds, orderly_groups, verify_counts};
 
 mod instrumented_array;
 mod quick_find;
@@ -14,4 +14,8 @@ fn main() {
     assert!(quick_find.connected(0, 2));
     assert!(!quick_find.connected(1, 2));
     verify_counts(&quick_find, 16, 6);
+
+    let mut quick_find: QuickFind<12> = QuickFind::new();
+    orderly_groups(&mut quick_find, 4);
+    assert!(quick_find.connected(0, 4));
 }

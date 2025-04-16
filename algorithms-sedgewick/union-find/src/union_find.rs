@@ -19,6 +19,21 @@ where
     }
 }
 
+pub fn orderly_groups<const LENGTH: usize, T>(uf: &mut T, group_count: usize)
+where
+    T: UnionFind<LENGTH>,
+{
+    let cycles = LENGTH / group_count;
+    for cylcle_index in 1..cycles {
+        for index in 0..group_count {
+            uf.union(
+                (cylcle_index - 1) * group_count + index,
+                cylcle_index * group_count + index,
+            );
+        }
+    }
+}
+
 pub fn verify_counts<const LENGTH: usize, T>(uf: &T, reads: u64, writes: u64)
 where
     T: UnionFind<LENGTH>,

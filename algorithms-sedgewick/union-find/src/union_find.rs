@@ -1,10 +1,17 @@
-// common utilities that can work on any implementation of union-find
+// A component is a set of N connected sites
+// Those N sites might be points in space, pixels in an image, or computers in a network
+// So we have M components with M << N
+// This module provides the trait that all implementations must implement
+// as well as common utilities that can work on any implementation
 pub trait UnionFind<const LENGTH: usize> {
     // join together p and q
     fn union(&mut self, p: usize, q: usize);
 
     // answers true if p and q are in the same component
     fn connected(&mut self, p: usize, q: usize) -> bool;
+
+    // answers the component id that the specified site is a member of
+    fn find(&mut self, p: usize) -> usize;
 
     fn count_reads(&self) -> u64;
     fn count_writes(&self) -> u64;

@@ -51,58 +51,47 @@ impl<const LENGTH: usize> UnionFind<LENGTH> for QuickFind<LENGTH> {
 #[cfg(test)]
 mod tests {
     use crate::QuickFind;
-    use crate::UnionFind;
-    use crate::union_find::verify_counts;
-    use crate::union_find::{connect_evens_odds, orderly_groups};
+    use crate::union_find::{UnionFind, verify_not_connected};
+    use crate::union_find::{connect_evens_odds, orderly_groups, verify_connected};
+    use crate::union_find::{single_straight_group, verify_counts};
 
     #[test]
     fn evens_odds_manual() {
         let mut quick_find: QuickFind<10> = QuickFind::new();
-        assert_eq!(quick_find.site_to_component.count_reads(), 0);
-        assert_eq!(quick_find.site_to_component.count_writes(), 10);
+        verify_counts(&quick_find, 0, 10);
         quick_find.union(1, 3);
-        assert_eq!(quick_find.site_to_component.count_reads(), 12);
-        assert_eq!(quick_find.site_to_component.count_writes(), 11);
+        verify_counts(&quick_find, 12, 11);
         quick_find.union(3, 5);
-        assert_eq!(quick_find.site_to_component.count_reads(), 12 * 2);
-        assert_eq!(quick_find.site_to_component.count_writes(), 13);
+        verify_counts(&quick_find, 12 * 2, 13);
         quick_find.union(5, 7);
-        assert_eq!(quick_find.site_to_component.count_reads(), 12 * 3);
-        assert_eq!(quick_find.site_to_component.count_writes(), 16);
+        verify_counts(&quick_find, 12 * 3, 16);
         quick_find.union(7, 9);
-        assert_eq!(quick_find.site_to_component.count_reads(), 12 * 4);
-        assert_eq!(quick_find.site_to_component.count_writes(), 20);
+        verify_counts(&quick_find, 12 * 4, 20);
 
         quick_find.union(0, 2);
-        assert_eq!(quick_find.site_to_component.count_reads(), 12 * 5);
-        assert_eq!(quick_find.site_to_component.count_writes(), 21);
+        verify_counts(&quick_find, 12 * 5, 21);
         quick_find.union(2, 4);
-        assert_eq!(quick_find.site_to_component.count_reads(), 12 * 6);
-        assert_eq!(quick_find.site_to_component.count_writes(), 23);
+        verify_counts(&quick_find, 12 * 6, 23);
         quick_find.union(4, 6);
-        assert_eq!(quick_find.site_to_component.count_reads(), 12 * 7);
-        assert_eq!(quick_find.site_to_component.count_writes(), 26);
+        verify_counts(&quick_find, 12 * 7, 26);
         quick_find.union(6, 8);
-        assert_eq!(quick_find.site_to_component.count_reads(), 12 * 8);
-        assert_eq!(quick_find.site_to_component.count_writes(), 30);
-
-        assert!(quick_find.connected(0, 2));
-        assert_eq!(quick_find.site_to_component.count_reads(), 12 * 8 + 2);
-        assert!(!quick_find.connected(0, 1));
-        assert_eq!(quick_find.site_to_component.count_reads(), 12 * 8 + 4);
+        verify_counts(&quick_find, 12 * 8, 30);
+        verify_connected(&mut quick_find, 0, 2);
+        verify_counts(&quick_find, 12 * 8 + 2, 30);
+        verify_not_connected(&mut quick_find, 0, 1);
+        verify_counts(&quick_find, 12 * 8 + 4, 30);
     }
 
     #[test]
     fn evens_odds() {
         let mut quick_find: QuickFind<12> = QuickFind::new();
-        assert_eq!(quick_find.count_reads(), 0);
-        assert_eq!(quick_find.count_writes(), 12);
+        verify_counts(&quick_find, 0, 12);
 
         connect_evens_odds(&mut quick_find);
         verify_counts(&quick_find, 140, 42);
 
-        assert!(quick_find.connected(0, 2));
-        assert!(!quick_find.connected(0, 1));
+        verify_connected(&mut quick_find, 0, 2);
+        verify_not_connected(&mut quick_find, 0, 1);
 
         let mut quick_find: QuickFind<120> = QuickFind::new();
         connect_evens_odds(&mut quick_find);
@@ -110,11 +99,24 @@ mod tests {
     }
 
     #[test]
+    fn straight_line() {
+        let mut quick_find: QuickFind<12> = QuickFind::new();
+        single_straight_group(&mut quick_find);
+        verify_counts(&quick_find, 154, 78);
+        verify_connected(&mut quick_find, 0, 11);
+
+        let mut quick_find: QuickFind<120> = QuickFind::new();
+        single_straight_group(&mut quick_find);
+        verify_counts(&quick_find, 14518, 7260);
+        verify_connected(&mut quick_find, 0, 119);
+    }
+
+    #[test]
     fn orderly() {
         let mut quick_find: QuickFind<12> = QuickFind::new();
         orderly_groups(&mut quick_find, 4);
         verify_counts(&quick_find, 112, 24);
-        assert!(quick_find.connected(0, 4));
+        verify_connected(&mut quick_find, 0, 4);
 
         let mut quick_find: QuickFind<120> = QuickFind::new();
         orderly_groups(&mut quick_find, 4);

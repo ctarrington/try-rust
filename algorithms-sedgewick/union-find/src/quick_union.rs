@@ -51,7 +51,9 @@ impl<const LENGTH: usize> UnionFind<LENGTH> for QuickUnion<LENGTH> {
 #[cfg(test)]
 mod tests {
     use crate::quick_union::QuickUnion;
-    use crate::union_find::{UnionFind, verify_counts};
+    use crate::union_find::{
+        UnionFind, single_straight_group, verify_connected, verify_counts, verify_not_connected,
+    };
     use crate::union_find::{connect_evens_odds, orderly_groups};
 
     #[test]
@@ -64,8 +66,8 @@ mod tests {
         connect_evens_odds(&mut quick_union);
         verify_counts(&quick_union, 236, 238);
 
-        assert!(quick_union.connected(0, 2));
-        assert!(!quick_union.connected(0, 1));
+        verify_connected(&mut quick_union, 0, 2);
+        verify_not_connected(&mut quick_union, 0, 1);
     }
 
     #[test]
@@ -77,5 +79,18 @@ mod tests {
         let mut quick_union: QuickUnion<120> = QuickUnion::new();
         orderly_groups(&mut quick_union, 40);
         verify_counts(&quick_union, 160, 200);
+    }
+
+    #[test]
+    fn straight_line() {
+        let mut quick_union: QuickUnion<12> = QuickUnion::new();
+        single_straight_group(&mut quick_union);
+        verify_counts(&quick_union, 22, 23);
+        verify_connected(&mut quick_union, 0, 11);
+
+        let mut quick_union: QuickUnion<120> = QuickUnion::new();
+        single_straight_group(&mut quick_union);
+        verify_counts(&quick_union, 238, 239);
+        verify_connected(&mut quick_union, 0, 119);
     }
 }

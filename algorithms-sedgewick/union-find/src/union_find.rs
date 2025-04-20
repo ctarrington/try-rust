@@ -41,10 +41,33 @@ where
     }
 }
 
+pub fn single_straight_group<const LENGTH: usize, T>(uf: &mut T)
+where
+    T: UnionFind<LENGTH>,
+{
+    for index in 0..LENGTH - 1 {
+        uf.union(index, index + 1);
+    }
+}
+
 pub fn verify_counts<const LENGTH: usize, T>(uf: &T, reads: u64, writes: u64)
 where
     T: UnionFind<LENGTH>,
 {
     assert_eq!(reads, uf.count_reads());
     assert_eq!(writes, uf.count_writes());
+}
+
+pub fn verify_connected<const LENGTH: usize, T>(uf: &mut T, p: usize, q: usize)
+where
+    T: UnionFind<LENGTH>,
+{
+    assert!(uf.connected(p, q));
+}
+
+pub fn verify_not_connected<const LENGTH: usize, T>(uf: &mut T, p: usize, q: usize)
+where
+    T: UnionFind<LENGTH>,
+{
+    assert!(!uf.connected(p, q));
 }

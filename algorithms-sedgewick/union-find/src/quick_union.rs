@@ -46,15 +46,19 @@ impl<const LENGTH: usize> UnionFind<LENGTH> for QuickUnion<LENGTH> {
     fn count_writes(&self) -> u64 {
         self.site_to_parent.count_writes()
     }
+
+    fn iter(&self) -> impl Iterator<Item = usize> {
+        self.site_to_parent.iter()
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::quick_union::QuickUnion;
-    use crate::union_find::{
-        UnionFind, single_straight_group, verify_connected, verify_counts, verify_not_connected,
-    };
     use crate::union_find::{connect_evens_odds, orderly_groups};
+    use crate::union_find::{
+        single_straight_group, verify_connected, verify_counts, verify_not_connected,
+    };
 
     #[test]
     fn evens_odds() {

@@ -30,4 +30,8 @@ impl<const LENGTH: usize> InstrumentedArray<LENGTH> {
     pub fn count_writes(&self) -> u64 {
         self.writes
     }
+
+    pub fn iter(&self) -> impl Iterator<Item = usize> {
+        self.values.iter().copied()
+    }
 }

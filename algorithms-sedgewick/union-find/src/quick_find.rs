@@ -55,7 +55,7 @@ impl<const LENGTH: usize> UnionFind<LENGTH> for QuickFind<LENGTH> {
 #[cfg(test)]
 mod tests {
     use crate::QuickFind;
-    use crate::union_find::{UnionFind, verify_not_connected, write_dot};
+    use crate::union_find::{UnionFind, verify_not_connected};
     use crate::union_find::{connect_evens_odds, orderly_groups, verify_connected};
     use crate::union_find::{single_straight_group, verify_counts};
 
@@ -100,8 +100,6 @@ mod tests {
         let mut quick_find: QuickFind<120> = QuickFind::new();
         connect_evens_odds(&mut quick_find);
         verify_counts(&quick_find, 14396, 3660);
-
-        println!("quick find {}", write_dot(&mut quick_find, "even odds"));
     }
 
     #[test]

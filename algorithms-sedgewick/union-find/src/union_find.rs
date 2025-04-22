@@ -1,5 +1,9 @@
+use std::fs::File;
+use std::io::{Error, Write};
+use uuid::Uuid;
+
 // A component is a set of N connected sites
-// Those N sites might be points in space, pixels in an image, or computers in a network
+// Those N sites might be points in space, pixels in an image, or computers in a network.
 // So we have M components with M << N
 // This module provides the trait that all implementations must implement
 // as well as common utilities that can work on any implementation
@@ -33,11 +37,11 @@ where
     T: UnionFind<LENGTH>,
 {
     let cycles = LENGTH / group_count;
-    for cylcle_index in 1..cycles {
+    for cycle_index in 1..cycles {
         for index in 0..group_count {
             uf.union(
-                (cylcle_index - 1) * group_count + index,
-                cylcle_index * group_count + index,
+                (cycle_index - 1) * group_count + index,
+                cycle_index * group_count + index,
             );
         }
     }
@@ -74,7 +78,7 @@ where
     assert!(!uf.connected(p, q));
 }
 
-pub fn write_dot<const LENGTH: usize, T>(uf: &mut T, label: &str) -> String
+pub fn write_dot<const LENGTH: usize, T>(uf: &mut T, label: &str) -> Result<(), Error>
 where
     T: UnionFind<LENGTH>,
 {
@@ -84,6 +88,7 @@ where
         .map(|(index, component)| format!("{} -> {}", index, component))
         .collect::<Vec<String>>()
         .join("\n");
+
     let dot = format!(
         "
 digraph {{
@@ -94,5 +99,10 @@ rankdir=TB
 "
     );
 
-    dot.to_string()
+    let uuid = Uuid::new_v4();
+    let path = format!("./results/quick_find_{}.dot", uuid);
+    let mut output = File::create(path)?;
+    write!(output, "{}", dot)?;
+
+    Ok(())
 }

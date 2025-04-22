@@ -4,13 +4,14 @@ use crate::union_find::{
     connect_evens_odds, orderly_groups, single_straight_group, verify_connected, verify_counts,
     verify_not_connected, write_dot,
 };
+use std::io::Error;
 
 mod instrumented_array;
 mod quick_find;
 mod quick_union;
 mod union_find;
 
-fn main() {
+fn main() -> Result<(), Error> {
     let mut quick_find: QuickFind<4> = QuickFind::new();
     connect_evens_odds(&mut quick_find);
     verify_connected(&mut quick_find, 0, 2);
@@ -21,10 +22,7 @@ fn main() {
     orderly_groups(&mut quick_find, 4);
     verify_connected(&mut quick_find, 0, 4);
 
-    println!(
-        "quick find {}",
-        write_dot(&mut quick_find, "quick find: even odds")
-    );
+    write_dot(&mut quick_find, "quick find: even odds")?;
 
     let mut quick_union: QuickUnion<12> = QuickUnion::new();
     orderly_groups(&mut quick_union, 4);
@@ -34,8 +32,7 @@ fn main() {
     single_straight_group(&mut quick_union);
     verify_connected(&mut quick_union, 0, 1);
 
-    println!(
-        "quick union {}",
-        write_dot(&mut quick_union, "quick union: even odds")
-    );
+    write_dot(&mut quick_union, "quick union: even odds")?;
+
+    Ok(())
 }

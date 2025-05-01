@@ -22,10 +22,14 @@ fn convert_to_ranges(left_longitude: f64, right_longitude: f64) -> Ranges {
 }
 
 fn is_in_bounds(left_longitude: f64, right_longitude: f64, value: f64) -> bool {
-    convert_to_ranges(left_longitude, right_longitude)
-        .iter()
-        .flatten()
-        .any(|range| value >= range.0 && value <= range.1)
+    let min = left_longitude.min(right_longitude);
+    let max = left_longitude.max(right_longitude);
+    let in_range = value >= min && value <= max;
+    if left_longitude > right_longitude {
+        !in_range
+    } else {
+        in_range
+    }
 }
 
 #[cfg(test)]

@@ -11,6 +11,11 @@ type Ranges = [Option<(f64, f64)>; 2];
 fn convert_to_ranges(left_longitude: f64, right_longitude: f64) -> Ranges {
     if left_longitude < right_longitude {
         [Some((left_longitude, right_longitude)), None::<(f64, f64)>]
+    } else if left_longitude >= 0.0 && right_longitude < 0.0 {
+        [
+            Some((left_longitude, 180.0)),
+            Some((-180.0, right_longitude)),
+        ]
     } else {
         [Some((left_longitude, 180.0)), Some((0.0, right_longitude))]
     }
@@ -56,11 +61,20 @@ mod tests {
     fn straddle_in_bounds() {
         assert!(is_in_bounds(170.0, 10.0, 175.0));
         assert!(is_in_bounds(170.0, 10.0, 5.0));
+        assert!(is_in_bounds(-100.0, -80.0, -90.0));
+        assert!(is_in_bounds(-10.0, 10.0, 1.0));
+        assert!(is_in_bounds(151.0, -177.0, 177.0));
+        assert!(is_in_bounds(151.0, -177.0, -178.0));
     }
 
     #[test]
     fn straddle_out_of_bounds() {
         assert!(!is_in_bounds(170.0, 10.0, 15.0));
         assert!(!is_in_bounds(170.0, 10.0, 165.0));
+        assert!(!is_in_bounds(-100.0, -80.0, -110.0));
+        assert!(!is_in_bounds(-100.0, -80.0, -70.0));
+        assert!(!is_in_bounds(-10.0, 10.0, 11.0));
+        assert!(!is_in_bounds(151.0, -177.0, -167.0));
+        assert!(!is_in_bounds(151.0, -177.0, 148.0));
     }
 }

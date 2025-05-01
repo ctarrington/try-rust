@@ -25,7 +25,7 @@ fn is_in_bounds(left_longitude: f64, right_longitude: f64, value: f64) -> bool {
     convert_to_ranges(left_longitude, right_longitude)
         .iter()
         .flatten()
-        .any(|range| value > range.0 && value < range.1)
+        .any(|range| value >= range.0 && value <= range.1)
 }
 
 #[cfg(test)]
@@ -65,6 +65,8 @@ mod tests {
         assert!(is_in_bounds(-10.0, 10.0, 1.0));
         assert!(is_in_bounds(151.0, -177.0, 179.9));
         assert!(is_in_bounds(151.0, -177.0, -178.0));
+        assert!(is_in_bounds(151.0, -177.0, -180.0));
+        assert!(is_in_bounds(151.0, -177.0, 180.0));
     }
 
     #[test]

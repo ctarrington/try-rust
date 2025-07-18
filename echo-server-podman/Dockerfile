@@ -1,5 +1,5 @@
 # Use the official Rust image as a builder
-FROM docker.io/rust:1.76 as builder
+FROM docker.io/rust:1.88 as builder
 
 # Create a new directory for the app
 WORKDIR /usr/src/app
